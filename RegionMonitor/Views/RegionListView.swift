@@ -109,8 +109,7 @@ struct AddRegionView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var identifier = ""
-    @State private var latitude = ""
-    @State private var longitude = ""
+    @State private var centre = ""
     @State private var radius: Double = 150
     @State private var notifyOnEntry = true
     @State private var notifyOnExit = true
@@ -125,19 +124,16 @@ struct AddRegionView: View {
                 }
 
                 Section {
-                    TextField("Latitude", text: $latitude)
+                    TextField("19.118344, 72.939373", text: $centre)
                         .keyboardType(.numbersAndPunctuation)
-                        .onChange(of: latitude) { old, new in splitPastedPair(old: old, new: new) }
-                    TextField("Longitude", text: $longitude)
-                        .keyboardType(.numbersAndPunctuation)
-                        .onChange(of: longitude) { old, new in splitPastedPair(old: old, new: new) }
+                        .autocorrectionDisabled()
                     Button("Use current location") { fillFromCurrentLocation() }
                         .disabled(location.lastLocation == nil)
                 } header: {
                     Text("Centre")
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Paste a whole \u{201C}19.118344, 72.939373\u{201D} pair into either field and it splits across both.")
+                        Text("Latitude and longitude, comma separated \u{2014} paste it straight from a map app.")
                         if let fix = location.lastLocation {
                             Text(String(format: "Last fix was %.0f s ago, accurate to about %.0f m.",
                                         -fix.timestamp.timeIntervalSinceNow, fix.horizontalAccuracy))
@@ -175,58 +171,30 @@ struct AddRegionView: View {
         }
     }
 
-    /// Rewrites a `lat, lng` pair pasted into one field across both.
-    ///
-    /// Only fires on a bulk insert. Splitting on every keystroke would ambush
-    /// anyone typing the pair by hand: the moment they typed the first digit
-    /// after the comma the field would rewrite itself under the cursor and the
-    /// rest of the number would land in the wrong box. Typed input is left
-    /// alone and parsed by `parseCentre` on save instead.
-    ///
-    /// Editing a field from inside its own `onChange` is safe: the value
-    /// written back is a single number, so the second pass finds no pair.
-    private func splitPastedPair(old: String, new: String) {
-        guard new.count > old.count + 1, let pair = Self.coordinatePair(in: new) else { return }
-        latitude = pair.latText
-        longitude = pair.lonText
-    }
-
-    /// Accepts the two fields filled separately, or a whole pair sitting in
-    /// either one.
-    static func parseCentre(latitude: String, longitude: String) -> (lat: Double, lon: Double)? {
-        if let pair = coordinatePair(in: latitude) { return (pair.lat, pair.lon) }
-        if let pair = coordinatePair(in: longitude) { return (pair.lat, pair.lon) }
-        guard let lat = Double(latitude.trimmingCharacters(in: .whitespaces)),
-              let lon = Double(longitude.trimmingCharacters(in: .whitespaces)) else { return nil }
-        return (lat, lon)
-    }
-
-    /// Splits the form every map app puts on the clipboard \u{2014}
+    /// Parses the form every map app puts on the clipboard \u{2014}
     /// "19.118344457801253, 72.93937313363423". A bare space works as the
-    /// separator too. Returns nil unless the whole string is exactly one pair,
-    /// so a single number falls through to the two-field path untouched.
-    static func coordinatePair(in text: String) -> (lat: Double, lon: Double, latText: String, lonText: String)? {
+    /// separator too, so a pair copied without its comma still lands.
+    static func coordinatePair(in text: String) -> (lat: Double, lon: Double)? {
         let parts = text.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
         guard parts.count == 2,
               let lat = Double(parts[0]),
               let lon = Double(parts[1]) else { return nil }
-        return (lat, lon, parts[0], parts[1])
+        return (lat, lon)
     }
 
     private func fillFromCurrentLocation() {
         guard let fix = location.lastLocation else { return }
-        latitude = String(format: "%.6f", fix.coordinate.latitude)
-        longitude = String(format: "%.6f", fix.coordinate.longitude)
+        centre = String(format: "%.6f, %.6f", fix.coordinate.latitude, fix.coordinate.longitude)
     }
 
     private func save() {
         let name = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { error = "Give the region a name."; return }
-        guard let centre = Self.parseCentre(latitude: latitude, longitude: longitude) else {
-            error = "Latitude and longitude need to be numbers \u{2014} either one per field, or a single \u{201C}lat, lng\u{201D} pair."
+        guard let pair = Self.coordinatePair(in: centre) else {
+            error = "Enter the centre as two numbers separated by a comma, e.g. 19.118344, 72.939373."
             return
         }
-        let coordinate = CLLocationCoordinate2D(latitude: centre.lat, longitude: centre.lon)
+        let coordinate = CLLocationCoordinate2D(latitude: pair.lat, longitude: pair.lon)
         guard CLLocationCoordinate2DIsValid(coordinate) else {
             error = "Those coordinates aren't valid."
             return
