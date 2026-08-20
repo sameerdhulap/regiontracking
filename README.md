@@ -35,16 +35,6 @@ Object IDs are hashed from each file's path and role rather than randomised, so 
 
 Adding files through Xcode's UI works fine too. The generator is just an escape hatch for when a pbxproj gets tangled.
 
-### Regenerating the app icon
-
-`Tools/generate_appicon.swift` draws the 1024x1024 icon straight into the asset catalog:
-
-```bash
-swift Tools/generate_appicon.swift
-```
-
-Same reasoning as the project generator: the icon lives as code, so a colour or layout tweak reviews as a readable diff rather than an opaque binary. The PNG is committed as well, so nothing has to run this to build. It is a full-bleed square with no alpha — iOS applies its own rounded mask, and an icon carrying transparency is rejected at submission.
-
 ### Layout
 
 ```
@@ -59,7 +49,6 @@ RegionMonitor/
   Info.plist
 Tools/
   generate_xcodeproj.py
-  generate_appicon.swift
 ```
 
 There's no `.xcdatamodeld` file. The model is built in code in `CoreDataStack.makeModel()`, which keeps the schema readable in a diff and avoids the usual merge pain on a binary model file.
