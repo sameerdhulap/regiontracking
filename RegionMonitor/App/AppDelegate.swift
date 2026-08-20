@@ -4,8 +4,8 @@
 //
 //  Everything location-related has to be wired up synchronously here. When
 //  iOS relaunches a terminated app for a region crossing, it calls this
-//  method and then delivers the queued delegate callback — anything deferred
-//  to a later runloop tick misses the event.
+//  method and then delivers the queued event — anything deferred to a later
+//  runloop tick misses it.
 //
 
 import CoreLocation
@@ -30,10 +30,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         LocationService.shared.bootstrap()
 
-        // Re-arm monitoring on every launch. Regions do persist across
-        // termination, but they're lost on reinstall and can be evicted, so
-        // reconciling here is cheap and removes a whole class of "it stopped
-        // working after a few days" reports.
+        // Open the CLMonitor now, whatever the authorization state.
+        // CoreLocation stops monitoring a condition when an event is pending
+        // for it and no monitor has been opened to receive it, so this is the
+        // CLMonitor-era equivalent of wiring up the delegate synchronously.
+        LocationService.shared.startEngine()
+
+        // Re-arm monitoring on every launch. Conditions do persist across
+        // termination — CoreLocation stores them itself — but they're lost on
+        // reinstall, so reconciling here is cheap and removes a whole class of
+        // "it stopped working after a few days" reports.
         let status = LocationService.shared.authorizationStatus
         if status == .authorizedAlways || status == .authorizedWhenInUse {
             LocationService.shared.startMonitoringAll()
