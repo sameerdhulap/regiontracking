@@ -14,6 +14,7 @@
 		7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AE3F10A05AE5872207E3F7 /* LogWriter.swift */; };
 		DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27E4976C54867F9223357D0 /* Model.swift */; };
 		BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AE0720389E232AB088F096 /* LocationService.swift */; };
+		23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */; };
 		E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */; };
 		51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8B031854CD9F8279B903F6 /* LogExporter.swift */; };
 		73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AFB0311991F316A40E7DF1 /* ExportView.swift */; };
@@ -32,6 +33,7 @@
 		05AE3F10A05AE5872207E3F7 /* LogWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWriter.swift; sourceTree = "<group>"; };
 		F27E4976C54867F9223357D0 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		63AE0720389E232AB088F096 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorEngine.swift; sourceTree = "<group>"; };
 		5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionStore.swift; sourceTree = "<group>"; };
 		7F8B031854CD9F8279B903F6 /* LogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExporter.swift; sourceTree = "<group>"; };
 		E3AFB0311991F316A40E7DF1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				63AE0720389E232AB088F096 /* LocationService.swift */,
+				201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */,
 				5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */,
 			);
 			path = Location;
@@ -215,6 +218,7 @@
 				7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */,
 				DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */,
 				BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */,
+				23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */,
 				E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */,
 				51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */,
 				73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */,
@@ -308,7 +312,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.regionmonitor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -333,7 +337,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.regionmonitor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;

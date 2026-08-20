@@ -5,8 +5,12 @@
 //  Owns the single CLLocationManager for the process. It must be created and
 //  have its delegate wired up *synchronously* inside
 //  didFinishLaunchingWithOptions — if the app is relaunched into the
-//  background for a region crossing and the delegate isn't set by the time
+//  background for a location event and the delegate isn't set by the time
 //  that method returns, the event is dropped.
+//
+//  Region monitoring is *not* here: it lives in RegionMonitorEngine on top of
+//  CLMonitor. What's left on the manager is authorization, significant-change
+//  and visit monitoring, and continuous/one-shot fixes.
 //
 
 import CoreLocation
@@ -17,7 +21,10 @@ final class LocationService: NSObject, ObservableObject {
 
     static let shared = LocationService()
 
-    /// iOS hard-caps a single app at 20 simultaneously monitored regions.
+    /// Self-imposed cap on simultaneously monitored conditions, carried over
+    /// from the 20-region limit CLLocationManager enforced. CLMonitor doesn't
+    /// document a number; `conditionLimitExceeded` on an event is how you find
+    /// out you've passed whatever it is.
     static let maxMonitoredRegions = 20
 
     private let manager = CLLocationManager()
@@ -28,17 +35,12 @@ final class LocationService: NSObject, ObservableObject {
     @Published private(set) var monitoredIdentifiers: Set<String> = []
     @Published var isStreamingContinuousUpdates = false
 
-    /// When true, every enter/exit is followed by an explicit
-    /// `requestState(for:)`. The system's own determination logged a beat
-    /// later is the cheapest way to tell a real crossing from a jittery fix
-    /// bouncing across the boundary.
-    @Published var verifyStateAfterTransition = true {
-        didSet { UserDefaults.standard.set(verifyStateAfterTransition, forKey: "verifyStateAfterTransition") }
-    }
+    /// Cached at bootstrap so the monitoring actor can clamp radii without
+    /// touching CLLocationManager off the main thread.
+    private(set) var maximumRegionRadius: CLLocationDistance = .greatestFiniteMagnitude
 
     private override init() {
         super.init()
-        verifyStateAfterTransition = UserDefaults.standard.object(forKey: "verifyStateAfterTransition") as? Bool ?? true
     }
 
     // MARK: - Bootstrap
@@ -62,6 +64,14 @@ final class LocationService: NSObject, ObservableObject {
 
         authorizationStatus = manager.authorizationStatus
         accuracyAuthorization = manager.accuracyAuthorization
+        maximumRegionRadius = manager.maximumRegionMonitoringDistance
+    }
+
+    /// Opens the CLMonitor and starts draining its events. Called
+    /// unconditionally at launch: CoreLocation drops a condition when an event
+    /// is pending for it and nothing has opened the monitor to receive it.
+    func startEngine() {
+        Task { await RegionMonitorEngine.shared.start() }
     }
 
     static var hasLocationBackgroundMode: Bool {
@@ -106,76 +116,29 @@ final class LocationService: NSObject, ObservableObject {
         syncRegions()
     }
 
-    /// Re-registers regions from Core Data. Monitored regions do survive app
-    /// termination, but they're silently dropped if the app is reinstalled or
-    /// the OS evicts them, so reconciling on launch is cheap insurance.
+    /// Reconciles the monitored conditions against Core Data. Conditions do
+    /// survive app termination — CoreLocation persists them itself — but
+    /// they're dropped on reinstall, so reconciling on launch is cheap
+    /// insurance.
     func syncRegions() {
-        guard CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self) else {
-            LogWriter.shared.log(.error, detail: "Circular region monitoring unavailable on this device")
-            return
-        }
-
-        RegionStore.shared.fetchActive { [weak self] stored in
-            guard let self else { return }
-
-            let desired = Dictionary(uniqueKeysWithValues: stored.map { ($0.identifier, $0) })
-            let current = self.manager.monitoredRegions
-
-            // Drop anything the OS is tracking that we no longer care about.
-            for region in current where desired[region.identifier] == nil {
-                self.manager.stopMonitoring(for: region)
-                LogWriter.shared.log(.monitoringStop, regionIdentifier: region.identifier,
-                                     detail: "no longer in store")
-            }
-
-            let currentIDs = Set(current.map(\.identifier))
-
-            for (identifier, snapshot) in desired {
-                guard !currentIDs.contains(identifier) else { continue }
-                guard self.manager.monitoredRegions.count < Self.maxMonitoredRegions else {
-                    LogWriter.shared.log(.monitoringFailed, regionIdentifier: identifier,
-                                         detail: "skipped — 20 region limit reached")
-                    continue
-                }
-
-                let region = CLCircularRegion(center: snapshot.coordinate,
-                                              radius: min(snapshot.radius, self.manager.maximumRegionMonitoringDistance),
-                                              identifier: identifier)
-                region.notifyOnEntry = snapshot.notifyOnEntry
-                region.notifyOnExit = snapshot.notifyOnExit
-
-                self.manager.startMonitoring(for: region)
-                LogWriter.shared.log(
-                    .monitoringStart,
-                    regionIdentifier: identifier,
-                    detail: String(format: "center=%.6f,%.6f radius=%.0fm entry=%@ exit=%@",
-                                   snapshot.coordinate.latitude, snapshot.coordinate.longitude,
-                                   region.radius,
-                                   region.notifyOnEntry ? "Y" : "N",
-                                   region.notifyOnExit ? "Y" : "N")
-                )
-
-                // Resolve inside/outside right away so the log has a known
-                // starting state instead of an implicit one.
-                self.manager.requestState(for: region)
-            }
-
-            self.monitoredIdentifiers = Set(self.manager.monitoredRegions.map(\.identifier))
-        }
+        Task { await RegionMonitorEngine.shared.sync() }
     }
 
     func stopMonitoring(identifier: String) {
-        for region in manager.monitoredRegions where region.identifier == identifier {
-            manager.stopMonitoring(for: region)
-            LogWriter.shared.log(.monitoringStop, regionIdentifier: identifier, detail: "removed by user")
-        }
-        monitoredIdentifiers = Set(manager.monitoredRegions.map(\.identifier))
+        Task { await RegionMonitorEngine.shared.remove(identifier: identifier) }
     }
 
+    /// Logs the last state CoreLocation recorded for each condition. See
+    /// `RegionMonitorEngine.logCurrentStates()` — this reads back a persisted
+    /// record and cannot force a fresh determination the way the old
+    /// `requestState(for:)` did.
     func requestStateForAll() {
-        for region in manager.monitoredRegions {
-            manager.requestState(for: region)
-        }
+        Task { await RegionMonitorEngine.shared.logCurrentStates() }
+    }
+
+    @MainActor
+    func updateMonitoredIdentifiers(_ identifiers: Set<String>) {
+        monitoredIdentifiers = identifiers
     }
 
     // MARK: - One-shot / continuous updates
@@ -229,29 +192,6 @@ extension LocationService: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-        LogWriter.shared.log(.regionEnter,
-                             location: lastLocation,
-                             regionIdentifier: region.identifier,
-                             detail: distanceDetail(to: region))
-        if verifyStateAfterTransition { manager.requestState(for: region) }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
-        LogWriter.shared.log(.regionExit,
-                             location: lastLocation,
-                             regionIdentifier: region.identifier,
-                             detail: distanceDetail(to: region))
-        if verifyStateAfterTransition { manager.requestState(for: region) }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
-        LogWriter.shared.log(.regionState,
-                             location: lastLocation,
-                             regionIdentifier: region.identifier,
-                             detail: "state=\(state.label) \(distanceDetail(to: region) ?? "")")
-    }
-
     func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
         let location = CLLocation(coordinate: visit.coordinate,
                                   altitude: 0,
@@ -263,28 +203,10 @@ extension LocationService: CLLocationManagerDelegate {
         LogWriter.shared.log(.visit, location: location, detail: "arrival=\(arrival) departure=\(departure)")
     }
 
-    func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
-        LogWriter.shared.log(.monitoringFailed,
-                             regionIdentifier: region?.identifier,
-                             detail: error.localizedDescription)
-    }
-
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         // kCLErrorLocationUnknown is transient — CL will keep trying.
         if let clError = error as? CLError, clError.code == .locationUnknown { return }
         LogWriter.shared.log(.error, detail: error.localizedDescription)
-    }
-
-    /// Distance from the last known fix to the region centre, alongside that
-    /// fix's accuracy. When those two numbers overlap, a transition is inside
-    /// the noise floor rather than a real crossing.
-    private func distanceDetail(to region: CLRegion) -> String? {
-        guard let circular = region as? CLCircularRegion, let fix = lastLocation else { return nil }
-        let centre = CLLocation(latitude: circular.center.latitude, longitude: circular.center.longitude)
-        let distance = fix.distance(from: centre)
-        let margin = distance - circular.radius
-        return String(format: "distToCentre=%.0fm radius=%.0fm margin=%+.0fm hAcc=%.0fm",
-                      distance, circular.radius, margin, fix.horizontalAccuracy)
     }
 }
 
@@ -309,17 +231,6 @@ extension CLAccuracyAuthorization {
         case .fullAccuracy:    return "full"
         case .reducedAccuracy: return "reduced"
         @unknown default:      return "unknown"
-        }
-    }
-}
-
-extension CLRegionState {
-    var label: String {
-        switch self {
-        case .inside:  return "inside"
-        case .outside: return "outside"
-        case .unknown: return "unknown"
-        @unknown default: return "unknown"
         }
     }
 }

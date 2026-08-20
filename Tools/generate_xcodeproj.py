@@ -20,7 +20,7 @@ import shutil
 import sys
 
 PROJECT_NAME = "RegionMonitor"
-BUNDLE_ID = "com.example.regionmonitor"
+BUNDLE_ID = "com.woosmap.app.citytime"
 DEPLOYMENT_TARGET = "17.0"
 SWIFT_VERSION = "5.0"
 
