@@ -78,6 +78,10 @@ public final class LogEvent: NSManagedObject {
     var eventType: EventType { EventType(rawValue: type) ?? .note }
 }
 
+/// `List`/`ForEach` need a stable identity; the `id` attribute is non-optional
+/// in the model, so conformance is just a declaration.
+extension LogEvent: Identifiable {}
+
 // MARK: - MonitoredRegionMO
 
 @objc(MonitoredRegionMO)
@@ -96,3 +100,5 @@ public final class MonitoredRegionMO: NSManagedObject {
         NSFetchRequest<MonitoredRegionMO>(entityName: "MonitoredRegionMO")
     }
 }
+
+extension MonitoredRegionMO: Identifiable {}

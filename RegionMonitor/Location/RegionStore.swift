@@ -30,15 +30,15 @@ final class RegionStore {
 
     private let stack = CoreDataStack.shared
 
-    func fetchActive(completion: @escaping ([RegionSnapshot]) -> Void) {
+    func activeSnapshots() async -> [RegionSnapshot] {
         let context = stack.writeContext
-        context.perform {
+        return await context.perform {
             let request: NSFetchRequest<MonitoredRegionMO> = MonitoredRegionMO.fetchRequest()
             request.predicate = NSPredicate(format: "isActive == YES")
             request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
 
             let results = (try? context.fetch(request)) ?? []
-            let snapshots = results.map { mo in
+            return results.map { mo in
                 RegionSnapshot(id: mo.id,
                                identifier: mo.identifier,
                                coordinate: CLLocationCoordinate2D(latitude: mo.latitude, longitude: mo.longitude),
@@ -48,9 +48,6 @@ final class RegionStore {
                                isActive: mo.isActive,
                                createdAt: mo.createdAt)
             }
-            // Hop to main: the caller drives CLLocationManager from here,
-            // and that class expects a thread with an active run loop.
-            DispatchQueue.main.async { completion(snapshots) }
         }
     }
 

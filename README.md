@@ -14,10 +14,10 @@ open RegionMonitor.xcodeproj
 
 Then two things before you build:
 
-1. Select the **RegionMonitor** target -> **Signing & Capabilities** -> pick your team. `DEVELOPMENT_TEAM` ships empty and `PRODUCT_BUNDLE_IDENTIFIER` is `com.example.regionmonitor`, so change the bundle ID to something you own.
+1. Select the **RegionMonitor** target -> **Signing & Capabilities** -> pick your team. `DEVELOPMENT_TEAM` ships empty and `PRODUCT_BUNDLE_IDENTIFIER` is `com.woosmap.app.citytime`, so change the bundle ID if you need one your team owns.
 2. Pick a real device. The Simulator can fake a location, but region crossings and background relaunches are unreliable there - you want hardware for anything you plan to trust.
 
-Everything else is already wired: deployment target is iOS 17.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour plus an empty app icon slot.
+Everything else is already wired: deployment target is iOS 17.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and and the asset catalog has an accent colour and an app icon.
 
 Background Modes needs no capability toggle and no entitlements file - for location it's purely the `UIBackgroundModes` array in Info.plist, which is already there. Xcode shows it ticked under Signing & Capabilities on its own.
 
@@ -35,6 +35,16 @@ Object IDs are hashed from each file's path and role rather than randomised, so 
 
 Adding files through Xcode's UI works fine too. The generator is just an escape hatch for when a pbxproj gets tangled.
 
+### Regenerating the app icon
+
+`Tools/generate_appicon.swift` draws the 1024x1024 icon straight into the asset catalog:
+
+```bash
+swift Tools/generate_appicon.swift
+```
+
+Same reasoning as the project generator: the icon lives as code, so a colour or layout tweak reviews as a readable diff rather than an opaque binary. The PNG is committed as well, so nothing has to run this to build. It is a full-bleed square with no alpha — iOS applies its own rounded mask, and an icon carrying transparency is rejected at submission.
+
 ### Layout
 
 ```
@@ -42,24 +52,25 @@ RegionMonitor.xcodeproj/
 RegionMonitor/
   App/           AppDelegate, SwiftUI entry point, app-state cache
   Persistence/   Core Data stack, model, log writer
-  Location/      CLLocationManager wrapper, region store
+  Location/      CLLocationManager wrapper, CLMonitor engine, region store
   Export/        CSV / JSON / GeoJSON serialisers
   Views/         SwiftUI screens
   Resources/     Assets.xcassets
   Info.plist
 Tools/
   generate_xcodeproj.py
+  generate_appicon.swift
 ```
 
 There's no `.xcdatamodeld` file. The model is built in code in `CoreDataStack.makeModel()`, which keeps the schema readable in a diff and avoids the usual merge pain on a binary model file.
 
 ## How it behaves when the app isn't running
 
-Region monitoring survives the app being suspended, backgrounded, and terminated — including a force-quit from the app switcher. When you cross a boundary, iOS relaunches the app in the background and calls `application(_:didFinishLaunchingWithOptions:)` with the `.location` key set, then delivers the delegate callback.
+Region monitoring survives the app being suspended, backgrounded, and terminated — including a force-quit from the app switcher. When you cross a boundary, iOS relaunches the app in the background and calls `application(_:didFinishLaunchingWithOptions:)` with the `.location` key set, then delivers the event on the monitor's `events` stream.
 
 Three details make or break this, and all three are handled in `AppDelegate`:
 
-- The `CLLocationManager` is created and its delegate assigned **synchronously** inside `didFinishLaunching`. Defer that to a later runloop tick and the queued event is dropped on the floor.
+- The `CLLocationManager` is created and its delegate assigned **synchronously** inside `didFinishLaunching`, and the `CLMonitor` is opened from the same method. Defer either to a later runloop tick and the queued event is dropped on the floor. CoreLocation is stricter about the monitor than it was about the delegate: it *stops monitoring* a condition when an event is pending for it and nothing has opened the monitor to receive it.
 - The Core Data store is opened in that same method, before the first callback can arrive.
 - The persistent store is set to `completeUntilFirstUserAuthentication` file protection. Without this, a background relaunch while the device is locked can find the store unreadable, and you lose exactly the events you most wanted.
 
@@ -82,7 +93,9 @@ distToCentre=138m radius=150m margin=-12m hAcc=65m
 
 That says the fix was 12 m inside a 150 m circle, but the fix itself was only accurate to 65 m. A transition where `|margin|` is smaller than `hAcc` is inside the noise floor — it tells you the OS *thinks* you crossed, not that you did. A run of those alternating enter/exit in quick succession is flapping, not movement.
 
-`verifyStateAfterTransition` (on by default, toggleable in `LocationService`) fires a `requestState(for:)` right after every transition, so a `region.state` entry lands next to each crossing with the system's own independent read. If the enter says "entered" and the state check a second later says "outside", you've caught a false positive in the act.
+`prev=` on each entry is the state CoreLocation last reported for that condition, so `prev=unknown` marks a first determination and `prev=unsatisfied state=satisfied` marks an actual crossing. `eventAge=` is how long the event sat before it reached the log.
+
+**Check region states** in the Log tab's overflow menu reads back the record CoreLocation has persisted for every condition. Note that this is weaker than it looks: `CLMonitor` has no equivalent of the old `requestState(for:)`, so it cannot force a fresh determination — it replays the last event, which may be hours old. Each such line is tagged `(persisted record, not a fresh fix)` and carries the event's own `date=`.
 
 A few things that reduce flapping in practice, if that's what you're chasing:
 
@@ -100,12 +113,24 @@ The Export tab writes to `Documents/Exports/` and offers a share sheet. Three fo
 - **JSON** — same data with a small envelope carrying OS version and app version.
 - **GeoJSON** — points only, ready to drop into geojson.io, QGIS or Kepler. Usually the fastest way to *see* whether a fix really left the circle.
 
-Because `UIFileSharingEnabled` is set, those files also appear under **On My iPhone → RegionMonitor** in the Files app and over USB in Finder. That matters when the device has been out in the field and you want the data off it without a network round trip.
+Because `UIFileSharingEnabled` is set, those files also appear under **On My iPhone → CityTime** in the Files app and over USB in Finder. That matters when the device has been out in the field and you want the data off it without a network round trip.
 
 ## Housekeeping
 
 `LogWriter.prune(olderThan:)` batch-deletes old entries and merges the deletions back into the view context, so the UI doesn't keep showing rows that no longer exist. Both the 7-day prune and delete-all are in the Log tab's overflow menu. Worth running before a long trial, since streaming fixes continuously will fill the store quickly.
 
-## Deprecation note
+## Monitoring API
 
-This uses `CLCircularRegion` and `CLLocationManager.startMonitoring(for:)`, which Xcode flags as deprecated in favour of `CLMonitor` and `CLCircularGeographicCondition` on iOS 17+. That's deliberate. The classic API has the most predictable terminated-state relaunch behaviour, and `CLMonitor` requires you to re-establish the monitor on each launch before events flow. For a diagnostic tool where a missed event is the worst outcome, the older API is the safer bet. Silence the warnings with `@available` annotations if they bother you.
+Regions are monitored with `CLMonitor` and `CLCircularGeographicCondition` (iOS 17+), in `Location/RegionMonitorEngine.swift`. `CLLocationManager` still handles authorisation, significant-change and visit monitoring, and one-shot/continuous fixes — none of which is deprecated.
+
+The old `CLCircularRegion` path is *soft* deprecated: the header marks it `API_DEPRECATED_WITH_REPLACEMENT(..., ios(7.0, API_TO_BE_DEPRECATED))`, and `API_TO_BE_DEPRECATED` is `100000`, a version no deployment target ever reaches. So it compiles without a warning at any deployment target — the absence of a warning is not evidence it's current.
+
+Four behavioural differences fall out of the swap, and they matter for a tool like this:
+
+- **No `requestState(for:)`.** There is no way to ask CoreLocation to resolve a condition on demand; you can only read back the last event it persisted. The independent second opinion the old code logged after every crossing is gone.
+- **Conditions are persisted by CoreLocation**, in `Library/CoreLocation/RegionMonitor/RegionMonitorConditions.monitor` inside the data container (CoreLocation names that folder after the bundle id or the process name). That file is protected, so the monitor cannot be opened before the first unlock after boot — the engine waits on `protectedDataDidBecomeAvailableNotification`.
+- **No per-direction filtering.** `CLCircularRegion` had `notifyOnEntry` / `notifyOnExit`; conditions report both directions. The flags are still honoured, but the filtering happens in the app, and a suppressed crossing is logged as `region.state` with `suppressed=entry|exit` rather than dropped.
+- **The monitor's name must be alphanumeric.** A dot or underscore makes `CLMonitor(_:)` throw `NSInternalInconsistencyException("Monitor name is not valid")` at launch. The header doesn't say so.
+- **No `monitoringDidFailFor` callback.** Authorisation and limit problems surface as per-event flags (`authDenied`, `conditionLimitExceeded`, `accuracyLimited`, …), which are iOS 18+ only. On iOS 17 a condition that cannot be monitored is simply quiet.
+
+The 20-condition cap in `LocationService.maxMonitoredRegions` is now self-imposed: it was CLLocationManager's documented limit, and CLMonitor doesn't publish one. `conditionLimitExceeded` on an event is how you find out you've passed whatever the real limit is.
