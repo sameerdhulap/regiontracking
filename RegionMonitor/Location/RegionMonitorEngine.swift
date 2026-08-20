@@ -11,8 +11,9 @@
 //  1. Conditions live in a file CoreLocation keeps for us, named after the
 //     monitor, inside the app's data container
 //     (Library/CoreLocation/RegionMonitor/RegionMonitorConditions.monitor).
-//     That file is protected, so the monitor cannot be opened before the
-//     first unlock after boot.
+//     That file is protected, so it is unreadable while the device is locked.
+//     See `activeMonitor()` for why this opens the monitor anyway rather than
+//     waiting for unlock as the header suggests.
 //  2. Events arrive on an AsyncSequence rather than a delegate, and
 //     CoreLocation *stops monitoring* a condition when an event is pending
 //     for it and no CLMonitor has been opened to receive it. The consuming
@@ -45,6 +46,7 @@ actor RegionMonitorEngine {
     /// `notifyOnExit` used to get from CLCircularRegion happens here now.
     private var configs: [String: RegionSnapshot] = [:]
     private var configsLoaded = false
+    private var unlockReconcileArmed = false
 
     /// Last state seen per identifier, so each log line can say what the
     /// state was before. A `prev=unknown` is how an initial determination
@@ -168,7 +170,23 @@ actor RegionMonitorEngine {
         if let openTask { return await openTask.value }
 
         let task = Task { () -> CLMonitor in
-            await Self.waitForProtectedData()
+            // Deliberately *not* waiting for protected data, which is what the
+            // CLMonitor header suggests. That advice collides with the other
+            // rule in the same header: CoreLocation stops monitoring a
+            // condition when an event is pending for it and no monitor has
+            // been opened to receive it. A background relaunch for a crossing
+            // is precisely when the device is likely to be locked, so waiting
+            // there risks dropping the event that woke us — the one event we
+            // exist to record.
+            //
+            // Opening now can instead come up against an unreadable condition
+            // store. That failure is visible and recoverable: events carry
+            // `persistenceUnavailable`, and `sync()` re-adds anything missing,
+            // including on the unlock hook armed below.
+            let unlocked = await MainActor.run { UIApplication.shared.isProtectedDataAvailable }
+            if !unlocked {
+                LogWriter.shared.log(.note, detail: "Opening the condition store with the device locked — persistence may be unavailable until unlock")
+            }
             return await CLMonitor(Self.monitorName)
         }
         openTask = task
@@ -181,33 +199,28 @@ actor RegionMonitorEngine {
 
         monitor = opened
         eventTask = Task { [weak self] in await self?.consumeEvents(from: opened) }
+        armUnlockReconcile()
         return opened
     }
 
-    /// The condition store lives in the data container, so it can't be opened
-    /// until the device has been unlocked once since boot.
-    private static func waitForProtectedData() async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            Task { @MainActor in
-                // The check and the registration both run here without an
-                // await between them, so the notification can't slip through
-                // the gap.
-                if UIApplication.shared.isProtectedDataAvailable {
-                    continuation.resume()
-                    return
-                }
+    /// Reconciles once protected data comes back, in case the monitor was
+    /// opened against a store it could not read. `sync()` is idempotent, so a
+    /// healthy open costs one no-op pass.
+    ///
+    /// The observer is never removed: it is wanted for the life of the
+    /// process, and holding no token keeps this off the actor's state.
+    private func armUnlockReconcile() {
+        guard !unlockReconcileArmed else { return }
+        unlockReconcileArmed = true
 
-                LogWriter.shared.log(.note, detail: "Waiting for first unlock before opening the condition store")
-
-                let box = ObserverBox()
-                box.token = NotificationCenter.default.addObserver(
-                    forName: UIApplication.protectedDataDidBecomeAvailableNotification,
-                    object: nil,
-                    queue: .main
-                ) { _ in
-                    box.release()
-                    continuation.resume()
-                }
+        Task { @MainActor in
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.protectedDataDidBecomeAvailableNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                LogWriter.shared.log(.note, detail: "Protected data available — reconciling conditions")
+                Task { await RegionMonitorEngine.shared.sync() }
             }
         }
     }
@@ -330,17 +343,6 @@ actor RegionMonitorEngine {
         formatter.formatOptions = [.withInternetDateTime]
         return formatter
     }()
-}
-
-/// Lets the unlock observer deregister itself from inside its own handler.
-/// Only ever touched on the main queue — the queue the observer is registered
-/// against, and the one that installs the token.
-private final class ObserverBox: @unchecked Sendable {
-    var token: NSObjectProtocol?
-    func release() {
-        if let token { NotificationCenter.default.removeObserver(token) }
-        token = nil
-    }
 }
 
 // MARK: - Readable labels

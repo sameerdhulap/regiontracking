@@ -7,41 +7,43 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */; };
-		445C3E76DA99E99CF7695D3C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338DF124E339F2B06623D460 /* RootView.swift */; };
-		4547A79BBE703BE95A1ACEE4 /* AppStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1120F8D60CC49B41E95FF84 /* AppStateTracker.swift */; };
-		51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8B031854CD9F8279B903F6 /* LogExporter.swift */; };
-		683443649CE96FD3380BB94F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3B23384E57CD776D6A794E6 /* Assets.xcassets */; };
-		7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AE3F10A05AE5872207E3F7 /* LogWriter.swift */; };
-		73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AFB0311991F316A40E7DF1 /* ExportView.swift */; };
 		9EBCC09E6DA6EDD7D2043F45 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FDCBA6D6DE75307B20C800 /* AppDelegate.swift */; };
+		4547A79BBE703BE95A1ACEE4 /* AppStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1120F8D60CC49B41E95FF84 /* AppStateTracker.swift */; };
 		A7CF6E06A2646846B4258C3B /* RegionMonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979BFF7B5B75C75B90D195F6 /* RegionMonitorApp.swift */; };
+		D0749EC59A1AB3FA93DE23EC /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */; };
+		7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AE3F10A05AE5872207E3F7 /* LogWriter.swift */; };
+		DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27E4976C54867F9223357D0 /* Model.swift */; };
+		BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AE0720389E232AB088F096 /* LocationService.swift */; };
+		23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */; };
+		E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */; };
+		38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774736A694774244313B6C /* ServiceSession.swift */; };
+		51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8B031854CD9F8279B903F6 /* LogExporter.swift */; };
+		73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AFB0311991F316A40E7DF1 /* ExportView.swift */; };
 		AEB6EF7B26B4101A35D0BCF4 /* LogListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB29323A64CA48EDBAF4C460 /* LogListView.swift */; };
 		B85761B6DBD93C93DBF12D9D /* RegionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */; };
-		BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AE0720389E232AB088F096 /* LocationService.swift */; };
-		D0749EC59A1AB3FA93DE23EC /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */; };
-		DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27E4976C54867F9223357D0 /* Model.swift */; };
-		E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */; };
+		445C3E76DA99E99CF7695D3C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338DF124E339F2B06623D460 /* RootView.swift */; };
+		683443649CE96FD3380BB94F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E3B23384E57CD776D6A794E6 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		05AE3F10A05AE5872207E3F7 /* LogWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWriter.swift; sourceTree = "<group>"; };
-		201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorEngine.swift; sourceTree = "<group>"; };
-		28BF839B984C38F5F78F80A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		338DF124E339F2B06623D460 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionStore.swift; sourceTree = "<group>"; };
-		63AE0720389E232AB088F096 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
-		7F8B031854CD9F8279B903F6 /* LogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExporter.swift; sourceTree = "<group>"; };
-		979BFF7B5B75C75B90D195F6 /* RegionMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorApp.swift; sourceTree = "<group>"; };
-		A4FDCBA6D6DE75307B20C800 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A6581D43C628D8BB14C11591 /* RegionMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RegionMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB29323A64CA48EDBAF4C460 /* LogListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogListView.swift; sourceTree = "<group>"; };
+		A4FDCBA6D6DE75307B20C800 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B1120F8D60CC49B41E95FF84 /* AppStateTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTracker.swift; sourceTree = "<group>"; };
-		E3AFB0311991F316A40E7DF1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
-		E3B23384E57CD776D6A794E6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionListView.swift; sourceTree = "<group>"; };
-		F27E4976C54867F9223357D0 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
+		979BFF7B5B75C75B90D195F6 /* RegionMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorApp.swift; sourceTree = "<group>"; };
 		FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		05AE3F10A05AE5872207E3F7 /* LogWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWriter.swift; sourceTree = "<group>"; };
+		F27E4976C54867F9223357D0 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
+		63AE0720389E232AB088F096 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorEngine.swift; sourceTree = "<group>"; };
+		5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionStore.swift; sourceTree = "<group>"; };
+		C3774736A694774244313B6C /* ServiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceSession.swift; sourceTree = "<group>"; };
+		7F8B031854CD9F8279B903F6 /* LogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExporter.swift; sourceTree = "<group>"; };
+		E3AFB0311991F316A40E7DF1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
+		AB29323A64CA48EDBAF4C460 /* LogListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogListView.swift; sourceTree = "<group>"; };
+		E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionListView.swift; sourceTree = "<group>"; };
+		338DF124E339F2B06623D460 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		E3B23384E57CD776D6A794E6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		28BF839B984C38F5F78F80A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,14 +57,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1190A5D32F01D0D71382B7C3 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A6581D43C628D8BB14C11591 /* RegionMonitor.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		1624E51FBA7E3708A2669413 = {
 			isa = PBXGroup;
 			children = (
@@ -71,51 +65,12 @@
 			);
 			sourceTree = "<group>";
 		};
-		23E91DE8A4D8B2FFA4046B59 /* Resources */ = {
+		1190A5D32F01D0D71382B7C3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E3B23384E57CD776D6A794E6 /* Assets.xcassets */,
+				A6581D43C628D8BB14C11591 /* RegionMonitor.app */,
 			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
-		2973F9B8E8DFBE48E83CF776 /* Persistence */ = {
-			isa = PBXGroup;
-			children = (
-				FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */,
-				05AE3F10A05AE5872207E3F7 /* LogWriter.swift */,
-				F27E4976C54867F9223357D0 /* Model.swift */,
-			);
-			path = Persistence;
-			sourceTree = "<group>";
-		};
-		4EA9C6FBAC2AB18BB61BE7A4 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				E3AFB0311991F316A40E7DF1 /* ExportView.swift */,
-				AB29323A64CA48EDBAF4C460 /* LogListView.swift */,
-				E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */,
-				338DF124E339F2B06623D460 /* RootView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		655DF93D063A8773BACD4C9C /* Location */ = {
-			isa = PBXGroup;
-			children = (
-				63AE0720389E232AB088F096 /* LocationService.swift */,
-				201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */,
-				5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */,
-			);
-			path = Location;
-			sourceTree = "<group>";
-		};
-		904E3A8212F12BAE761CFAD1 /* Export */ = {
-			isa = PBXGroup;
-			children = (
-				7F8B031854CD9F8279B903F6 /* LogExporter.swift */,
-			);
-			path = Export;
+			name = Products;
 			sourceTree = "<group>";
 		};
 		E2A9F5534BB6F3730486E719 /* RegionMonitor */ = {
@@ -142,12 +97,60 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		2973F9B8E8DFBE48E83CF776 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */,
+				05AE3F10A05AE5872207E3F7 /* LogWriter.swift */,
+				F27E4976C54867F9223357D0 /* Model.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		655DF93D063A8773BACD4C9C /* Location */ = {
+			isa = PBXGroup;
+			children = (
+				63AE0720389E232AB088F096 /* LocationService.swift */,
+				201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */,
+				5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */,
+				C3774736A694774244313B6C /* ServiceSession.swift */,
+			);
+			path = Location;
+			sourceTree = "<group>";
+		};
+		904E3A8212F12BAE761CFAD1 /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				7F8B031854CD9F8279B903F6 /* LogExporter.swift */,
+			);
+			path = Export;
+			sourceTree = "<group>";
+		};
+		4EA9C6FBAC2AB18BB61BE7A4 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E3AFB0311991F316A40E7DF1 /* ExportView.swift */,
+				AB29323A64CA48EDBAF4C460 /* LogListView.swift */,
+				E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */,
+				338DF124E339F2B06623D460 /* RootView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		23E91DE8A4D8B2FFA4046B59 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E3B23384E57CD776D6A794E6 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		336D55A2790EC3FF3EC33BCD /* RegionMonitor */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 25C9750CCE43119E8A2EE0C5 /* Build configuration list for PBXNativeTarget "RegionMonitor" */;
+			buildConfigurationList = 25C9750CCE43119E8A2EE0C5 /* Build configuration list */;
 			buildPhases = (
 				BE0E117FCAE65A6FB51A150D /* Sources */,
 				A8AE17D7754CD02205A5280D /* Frameworks */,
@@ -177,7 +180,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B60B2D4DE788D34958E55455 /* Build configuration list for PBXProject "RegionMonitor" */;
+			buildConfigurationList = B60B2D4DE788D34958E55455 /* Build configuration list */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -220,6 +223,7 @@
 				BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */,
 				23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */,
 				E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */,
+				38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */,
 				51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */,
 				73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */,
 				AEB6EF7B26B4101A35D0BCF4 /* LogListView.swift in Sources */,
@@ -231,56 +235,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		63D89D264CB0408FEC681F8E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FZAYF37SJF;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = RegionMonitor/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		A5ECB8BEA23D4DB588979C66 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FZAYF37SJF;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = RegionMonitor/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		C49772F875BF1C0F342BD957 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -346,23 +300,73 @@
 			};
 			name = Release;
 		};
+		63D89D264CB0408FEC681F8E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RegionMonitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A5ECB8BEA23D4DB588979C66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RegionMonitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.woosmap.app.citytime;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		25C9750CCE43119E8A2EE0C5 /* Build configuration list for PBXNativeTarget "RegionMonitor" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				63D89D264CB0408FEC681F8E /* Debug */,
-				A5ECB8BEA23D4DB588979C66 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B60B2D4DE788D34958E55455 /* Build configuration list for PBXProject "RegionMonitor" */ = {
+		B60B2D4DE788D34958E55455 /* Build configuration list */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C49772F875BF1C0F342BD957 /* Debug */,
 				CA91E1691CC0A231E968B53E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		25C9750CCE43119E8A2EE0C5 /* Build configuration list */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				63D89D264CB0408FEC681F8E /* Debug */,
+				A5ECB8BEA23D4DB588979C66 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
