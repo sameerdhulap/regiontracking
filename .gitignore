@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Xcode per-user state — window layout, breakpoints, last-open files.
+# xcshareddata is deliberately not ignored: the shared scheme lives there and
+# is written by Tools/generate_xcodeproj.py.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Build output
+build/
+DerivedData/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Injected by Xcode's crash/profile tooling
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
