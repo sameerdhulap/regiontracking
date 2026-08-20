@@ -84,7 +84,7 @@ struct ExportView: View {
                 } header: {
                     Text("On device")
                 } footer: {
-                    Text("These also show up under On My iPhone \u{2192} RegionMonitor in the Files app, and over USB in Finder, so you can pull them off without a network.")
+                    Text("These also show up under On My iPhone \u{2192} CityTime in the Files app, and over USB in Finder, so you can pull them off without a network.")
                 }
             }
             .navigationTitle("Export")
