@@ -54,6 +54,23 @@ actor RegionMonitorEngine {
     /// the two for us.
     private var lastStates: [String: CLMonitor.Event.State] = [:]
 
+    /// The last event actually handled per identifier, and when it arrived.
+    /// CoreLocation has been observed delivering one event twice, milliseconds
+    /// apart, with an identical date — see `handle(_:)`.
+    private var lastHandled: [String: (date: Date, state: CLMonitor.Event.State, receivedAt: Date)] = [:]
+
+    /// How close together two identical events must arrive to be treated as
+    /// one delivery. Field duplicates land 1–18 ms apart, so this is orders of
+    /// magnitude wider than needed — deliberately, because the cost of
+    /// suppressing a real crossing is far higher than the cost of logging a
+    /// duplicate, and a real pair this close together would be flapping worth
+    /// seeing anyway.
+    private static let duplicateWindow: TimeInterval = 5
+
+    /// How many times the event stream has been opened. Should never exceed 1;
+    /// logged so a second consumer would be obvious rather than inferred.
+    private var consumersStarted = 0
+
     private init() {}
 
     // MARK: - Lifecycle
@@ -228,6 +245,10 @@ actor RegionMonitorEngine {
     // MARK: - Events
 
     private func consumeEvents(from monitor: CLMonitor) async {
+        consumersStarted += 1
+        let consumer = consumersStarted
+        LogWriter.shared.log(.note, detail: "Event stream consumer #\(consumer) started")
+
         do {
             for try await event in await monitor.events {
                 await handle(event)
@@ -240,6 +261,24 @@ actor RegionMonitorEngine {
 
     private func handle(_ event: CLMonitor.Event) async {
         let identifier = event.identifier
+
+        // CoreLocation can hand the same event to the stream more than once —
+        // field logs show pairs 1–18 ms apart carrying an identical date and
+        // state, which read as two crossings when they are one.
+        //
+        // Two independent things have to match before anything is dropped: the
+        // event's own date, and arrival inside `duplicateWindow`. A later
+        // crossing carries a later date, so the date alone would do; the window
+        // is belt-and-braces in case CoreLocation ever reuses a timestamp.
+        let now = Date()
+        if let seen = lastHandled[identifier],
+           seen.date == event.date,
+           seen.state == event.state,
+           now.timeIntervalSince(seen.receivedAt) < Self.duplicateWindow {
+            return
+        }
+        lastHandled[identifier] = (event.date, event.state, now)
+
         let previous = lastStates[identifier]
         lastStates[identifier] = event.state
 
@@ -266,6 +305,7 @@ actor RegionMonitorEngine {
         var parts = ["state=\(event.state.label)", "prev=\(previous?.label ?? "none")"]
         if let suppressed { parts.append("suppressed=\(suppressed)") }
         parts.append("eventAge=\(String(format: "%.1fs", -event.date.timeIntervalSinceNow))")
+        parts.append("evt=\(Self.timestamp.string(from: event.date))")
         if let snapshot, let distance = Self.distanceDetail(from: fix, to: snapshot) { parts.append(distance) }
         if snapshot == nil { parts.append("no matching region in store") }
         if event.refinement != nil { parts.append("refined=Y") }
@@ -340,7 +380,7 @@ actor RegionMonitorEngine {
 
     private static let timestamp: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
     }()
 }
