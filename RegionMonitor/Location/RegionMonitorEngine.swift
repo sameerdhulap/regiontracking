@@ -306,7 +306,8 @@ actor RegionMonitorEngine {
         if let suppressed { parts.append("suppressed=\(suppressed)") }
         parts.append("eventAge=\(String(format: "%.1fs", -event.date.timeIntervalSinceNow))")
         parts.append("evt=\(Self.timestamp.string(from: event.date))")
-        if let snapshot, let distance = Self.distanceDetail(from: fix, to: snapshot) { parts.append(distance) }
+        let distance = snapshot.flatMap { Self.distanceDetail(from: fix, to: $0) }
+        if let distance { parts.append(distance) }
         if snapshot == nil { parts.append("no matching region in store") }
         if event.refinement != nil { parts.append("refined=Y") }
         if let flags = Self.diagnosticFlags(for: event) { parts.append("flags=\(flags)") }
@@ -315,6 +316,15 @@ actor RegionMonitorEngine {
                              location: fix,
                              regionIdentifier: identifier,
                              detail: parts.joined(separator: " "))
+
+        // Only genuine crossings. A direction suppressed by the region's flags
+        // has already been downgraded to `.regionState` above, and a state
+        // resolution isn't something to buzz a pocket about.
+        if type == .regionEnter || type == .regionExit {
+            Notifier.shared.postCrossing(type,
+                                         region: identifier,
+                                         body: distance ?? "state=\(event.state.label)")
+        }
     }
 
     /// iOS 18 added per-event reasons for a condition not being monitored.
