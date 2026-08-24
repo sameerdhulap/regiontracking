@@ -110,13 +110,24 @@ actor RegionMonitorEngine {
             let radius = min(snapshot.radius, maximumRadius)
             let condition = CLMonitor.CircularGeographicCondition(center: snapshot.coordinate,
                                                                   radius: radius)
-            await monitor.add(condition, identifier: snapshot.identifier, assuming: .unknown)
+            // Assume outside rather than unknown, and let CoreLocation correct
+            // us. Adding with `.unknown` makes every new region fire an event
+            // the moment its state resolves — almost always an exit you did
+            // not walk, which lands in the log as a crossing and now buzzes a
+            // notification too. Assuming `.unsatisfied` costs nothing when it
+            // is right (silence) and self-corrects when it is wrong: standing
+            // inside the circle still produces a genuine enter.
+            //
+            // The trade is that silence after an add is now ambiguous — either
+            // "resolved outside" or "not resolved yet". `record(for:)`, behind
+            // "Check region states", is how you tell them apart.
+            await monitor.add(condition, identifier: snapshot.identifier, assuming: .unsatisfied)
             live.insert(snapshot.identifier)
 
             LogWriter.shared.log(
                 .monitoringStart,
                 regionIdentifier: snapshot.identifier,
-                detail: String(format: "center=%.6f,%.6f radius=%.0fm entry=%@ exit=%@",
+                detail: String(format: "center=%.6f,%.6f radius=%.0fm entry=%@ exit=%@ assuming=unsatisfied",
                                snapshot.coordinate.latitude, snapshot.coordinate.longitude,
                                radius,
                                snapshot.notifyOnEntry ? "Y" : "N",
