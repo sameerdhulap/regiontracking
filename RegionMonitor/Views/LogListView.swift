@@ -114,9 +114,9 @@ private struct LogListContent: View {
     var body: some View {
         Group {
             if events.isEmpty {
-                ContentUnavailableView("No entries yet",
-                                       systemImage: "list.bullet.rectangle",
-                                       description: Text("Add a region, then move across its boundary. Events land here even when the app is closed."))
+                EmptyStateView(title: "No entries yet",
+                               systemImage: "list.bullet.rectangle",
+                               message: "Add a region, then move across its boundary. Events land here even when the app is closed.")
             } else {
                 List(events) { LogRow(event: $0) }
                     .listStyle(.plain)

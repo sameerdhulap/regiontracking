@@ -20,9 +20,9 @@ struct RegionListView: View {
         NavigationStack {
             Group {
                 if regions.isEmpty {
-                    ContentUnavailableView("No regions",
-                                           systemImage: "mappin.slash",
-                                           description: Text("Add a circle around somewhere you'll walk in and out of. Around 100\u{2013}200 m works best; smaller circles fire unreliably."))
+                    EmptyStateView(title: "No regions",
+                                   systemImage: "mappin.slash",
+                                   message: "Add a circle around somewhere you'll walk in and out of. Around 100\u{2013}200 m works best; smaller circles fire unreliably.")
                 } else {
                     List {
                         Section {
