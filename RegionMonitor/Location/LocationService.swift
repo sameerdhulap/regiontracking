@@ -65,6 +65,15 @@ final class LocationService: NSObject, ObservableObject {
         authorizationStatus = manager.authorizationStatus
         accuracyAuthorization = manager.accuracyAuthorization
         maximumRegionRadius = manager.maximumRegionMonitoringDistance
+        updateServiceSession(for: authorizationStatus)
+    }
+
+    /// iOS 18 wants a CLServiceSession outstanding while an app uses location.
+    /// No-op below iOS 18, where the concept doesn't exist.
+    private func updateServiceSession(for status: CLAuthorizationStatus) {
+        if #available(iOS 18.0, *) {
+            Task { @MainActor in ServiceSession.shared.update(for: status) }
+        }
     }
 
     /// Opens the CLMonitor and starts draining its events. Called
@@ -176,6 +185,8 @@ extension LocationService: CLLocationManagerDelegate {
 
         LogWriter.shared.log(.authChange,
                              detail: "status=\(status.label) accuracy=\(accuracy.label)")
+
+        updateServiceSession(for: status)
 
         if status == .authorizedAlways || status == .authorizedWhenInUse {
             startMonitoringAll()

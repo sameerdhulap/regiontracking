@@ -18,6 +18,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         AppStateTracker.shared.start()
 
+        // Before anything can post: a notification raised during this launch
+        // needs the delegate already in place to show while frontmost.
+        Notifier.shared.start()
+
         // Touch the stack now so the store is open before the first callback.
         _ = CoreDataStack.shared
 
