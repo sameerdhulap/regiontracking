@@ -17,7 +17,7 @@ Then two things before you build:
 1. Select the **RegionMonitor** target -> **Signing & Capabilities** -> pick your team. `DEVELOPMENT_TEAM` ships empty and `PRODUCT_BUNDLE_IDENTIFIER` is `com.woosmap.app.citytime`, so change the bundle ID if you need one your team owns.
 2. Pick a real device. The Simulator can fake a location, but region crossings and background relaunches are unreliable there - you want hardware for anything you plan to trust.
 
-Everything else is already wired: deployment target is iOS 17.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and and the asset catalog has an accent colour and an app icon.
+Everything else is already wired: deployment target is iOS 17.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour and an app icon.
 
 Background Modes needs no capability toggle and no entitlements file - for location it's purely the `UIBackgroundModes` array in Info.plist, which is already there. Xcode shows it ticked under Signing & Capabilities on its own.
 
@@ -117,9 +117,16 @@ The old `CLCircularRegion` path is *soft* deprecated: the header marks it `API_D
 Four behavioural differences fall out of the swap, and they matter for a tool like this:
 
 - **No `requestState(for:)`.** There is no way to ask CoreLocation to resolve a condition on demand; you can only read back the last event it persisted. The independent second opinion the old code logged after every crossing is gone.
-- **Conditions are persisted by CoreLocation**, in `Library/CoreLocation/RegionMonitor/RegionMonitorConditions.monitor` inside the data container (CoreLocation names that folder after the bundle id or the process name). That file is protected, so the monitor cannot be opened before the first unlock after boot — the engine waits on `protectedDataDidBecomeAvailableNotification`.
+- **Conditions are persisted by CoreLocation**, in `Library/CoreLocation/RegionMonitor/RegionMonitorConditions.monitor` inside the data container (CoreLocation names that folder after the bundle id or the process name). That file is protected, so it is unreadable while the device is locked. See *Locked devices* below.
+- **iOS 18 wants a `CLServiceSession` outstanding** while an app uses location. `Location/ServiceSession.swift` holds one, at whichever level was actually granted, and logs the diagnostics it publishes. The `CLRequireExplicitServiceSession` Info.plist key is deliberately **not** adopted: it makes location services conditional on a session existing, a stronger promise than this app can keep across a background relaunch.
 - **No per-direction filtering.** `CLCircularRegion` had `notifyOnEntry` / `notifyOnExit`; conditions report both directions. The flags are still honoured, but the filtering happens in the app, and a suppressed crossing is logged as `region.state` with `suppressed=entry|exit` rather than dropped.
 - **The monitor's name must be alphanumeric.** A dot or underscore makes `CLMonitor(_:)` throw `NSInternalInconsistencyException("Monitor name is not valid")` at launch. The header doesn't say so.
 - **No `monitoringDidFailFor` callback.** Authorisation and limit problems surface as per-event flags (`authDenied`, `conditionLimitExceeded`, `accuracyLimited`, …), which are iOS 18+ only. On iOS 17 a condition that cannot be monitored is simply quiet.
+
+### Locked devices
+
+The CLMonitor header says to wait for `UIApplicationProtectedDataDidBecomeAvailable` before opening a monitor. The same header also says CoreLocation stops monitoring a condition when an event is pending for it and no monitor has been opened to receive it. Those two collide exactly where it hurts: a background relaunch for a crossing is precisely when the device is likely to be locked, so waiting there risks dropping the event that woke the app.
+
+`activeMonitor()` therefore opens immediately and does not wait. The cost is that the condition store may be unreadable at that moment, which is a recoverable and *visible* failure — events carry `persistenceUnavailable`, and a `protectedDataDidBecomeAvailable` hook re-runs `sync()` to re-add anything that went missing. A dropped crossing would be neither recoverable nor visible.
 
 The 20-condition cap in `LocationService.maxMonitoredRegions` is now self-imposed: it was CLLocationManager's documented limit, and CLMonitor doesn't publish one. `conditionLimitExceeded` on an event is how you find out you've passed whatever the real limit is.

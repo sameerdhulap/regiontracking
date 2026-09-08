@@ -11,8 +11,9 @@
 //  1. Conditions live in a file CoreLocation keeps for us, named after the
 //     monitor, inside the app's data container
 //     (Library/CoreLocation/RegionMonitor/RegionMonitorConditions.monitor).
-//     That file is protected, so the monitor cannot be opened before the
-//     first unlock after boot.
+//     That file is protected, so it is unreadable while the device is locked.
+//     See `activeMonitor()` for why this opens the monitor anyway rather than
+//     waiting for unlock as the header suggests.
 //  2. Events arrive on an AsyncSequence rather than a delegate, and
 //     CoreLocation *stops monitoring* a condition when an event is pending
 //     for it and no CLMonitor has been opened to receive it. The consuming
@@ -45,12 +46,30 @@ actor RegionMonitorEngine {
     /// `notifyOnExit` used to get from CLCircularRegion happens here now.
     private var configs: [String: RegionSnapshot] = [:]
     private var configsLoaded = false
+    private var unlockReconcileArmed = false
 
     /// Last state seen per identifier, so each log line can say what the
     /// state was before. A `prev=unknown` is how an initial determination
     /// tells itself apart from a crossing — CLMonitor doesn't distinguish
     /// the two for us.
     private var lastStates: [String: CLMonitor.Event.State] = [:]
+
+    /// The last event actually handled per identifier, and when it arrived.
+    /// CoreLocation has been observed delivering one event twice, milliseconds
+    /// apart, with an identical date — see `handle(_:)`.
+    private var lastHandled: [String: (date: Date, state: CLMonitor.Event.State, receivedAt: Date)] = [:]
+
+    /// How close together two identical events must arrive to be treated as
+    /// one delivery. Field duplicates land 1–18 ms apart, so this is orders of
+    /// magnitude wider than needed — deliberately, because the cost of
+    /// suppressing a real crossing is far higher than the cost of logging a
+    /// duplicate, and a real pair this close together would be flapping worth
+    /// seeing anyway.
+    private static let duplicateWindow: TimeInterval = 5
+
+    /// How many times the event stream has been opened. Should never exceed 1;
+    /// logged so a second consumer would be obvious rather than inferred.
+    private var consumersStarted = 0
 
     private init() {}
 
@@ -91,13 +110,24 @@ actor RegionMonitorEngine {
             let radius = min(snapshot.radius, maximumRadius)
             let condition = CLMonitor.CircularGeographicCondition(center: snapshot.coordinate,
                                                                   radius: radius)
-            await monitor.add(condition, identifier: snapshot.identifier, assuming: .unknown)
+            // Assume outside rather than unknown, and let CoreLocation correct
+            // us. Adding with `.unknown` makes every new region fire an event
+            // the moment its state resolves — almost always an exit you did
+            // not walk, which lands in the log as a crossing and now buzzes a
+            // notification too. Assuming `.unsatisfied` costs nothing when it
+            // is right (silence) and self-corrects when it is wrong: standing
+            // inside the circle still produces a genuine enter.
+            //
+            // The trade is that silence after an add is now ambiguous — either
+            // "resolved outside" or "not resolved yet". `record(for:)`, behind
+            // "Check region states", is how you tell them apart.
+            await monitor.add(condition, identifier: snapshot.identifier, assuming: .unsatisfied)
             live.insert(snapshot.identifier)
 
             LogWriter.shared.log(
                 .monitoringStart,
                 regionIdentifier: snapshot.identifier,
-                detail: String(format: "center=%.6f,%.6f radius=%.0fm entry=%@ exit=%@",
+                detail: String(format: "center=%.6f,%.6f radius=%.0fm entry=%@ exit=%@ assuming=unsatisfied",
                                snapshot.coordinate.latitude, snapshot.coordinate.longitude,
                                radius,
                                snapshot.notifyOnEntry ? "Y" : "N",
@@ -168,7 +198,23 @@ actor RegionMonitorEngine {
         if let openTask { return await openTask.value }
 
         let task = Task { () -> CLMonitor in
-            await Self.waitForProtectedData()
+            // Deliberately *not* waiting for protected data, which is what the
+            // CLMonitor header suggests. That advice collides with the other
+            // rule in the same header: CoreLocation stops monitoring a
+            // condition when an event is pending for it and no monitor has
+            // been opened to receive it. A background relaunch for a crossing
+            // is precisely when the device is likely to be locked, so waiting
+            // there risks dropping the event that woke us — the one event we
+            // exist to record.
+            //
+            // Opening now can instead come up against an unreadable condition
+            // store. That failure is visible and recoverable: events carry
+            // `persistenceUnavailable`, and `sync()` re-adds anything missing,
+            // including on the unlock hook armed below.
+            let unlocked = await MainActor.run { UIApplication.shared.isProtectedDataAvailable }
+            if !unlocked {
+                LogWriter.shared.log(.note, detail: "Opening the condition store with the device locked — persistence may be unavailable until unlock")
+            }
             return await CLMonitor(Self.monitorName)
         }
         openTask = task
@@ -181,33 +227,28 @@ actor RegionMonitorEngine {
 
         monitor = opened
         eventTask = Task { [weak self] in await self?.consumeEvents(from: opened) }
+        armUnlockReconcile()
         return opened
     }
 
-    /// The condition store lives in the data container, so it can't be opened
-    /// until the device has been unlocked once since boot.
-    private static func waitForProtectedData() async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            Task { @MainActor in
-                // The check and the registration both run here without an
-                // await between them, so the notification can't slip through
-                // the gap.
-                if UIApplication.shared.isProtectedDataAvailable {
-                    continuation.resume()
-                    return
-                }
+    /// Reconciles once protected data comes back, in case the monitor was
+    /// opened against a store it could not read. `sync()` is idempotent, so a
+    /// healthy open costs one no-op pass.
+    ///
+    /// The observer is never removed: it is wanted for the life of the
+    /// process, and holding no token keeps this off the actor's state.
+    private func armUnlockReconcile() {
+        guard !unlockReconcileArmed else { return }
+        unlockReconcileArmed = true
 
-                LogWriter.shared.log(.note, detail: "Waiting for first unlock before opening the condition store")
-
-                let box = ObserverBox()
-                box.token = NotificationCenter.default.addObserver(
-                    forName: UIApplication.protectedDataDidBecomeAvailableNotification,
-                    object: nil,
-                    queue: .main
-                ) { _ in
-                    box.release()
-                    continuation.resume()
-                }
+        Task { @MainActor in
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.protectedDataDidBecomeAvailableNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                LogWriter.shared.log(.note, detail: "Protected data available — reconciling conditions")
+                Task { await RegionMonitorEngine.shared.sync() }
             }
         }
     }
@@ -215,6 +256,10 @@ actor RegionMonitorEngine {
     // MARK: - Events
 
     private func consumeEvents(from monitor: CLMonitor) async {
+        consumersStarted += 1
+        let consumer = consumersStarted
+        LogWriter.shared.log(.note, detail: "Event stream consumer #\(consumer) started")
+
         do {
             for try await event in await monitor.events {
                 await handle(event)
@@ -227,6 +272,24 @@ actor RegionMonitorEngine {
 
     private func handle(_ event: CLMonitor.Event) async {
         let identifier = event.identifier
+
+        // CoreLocation can hand the same event to the stream more than once —
+        // field logs show pairs 1–18 ms apart carrying an identical date and
+        // state, which read as two crossings when they are one.
+        //
+        // Two independent things have to match before anything is dropped: the
+        // event's own date, and arrival inside `duplicateWindow`. A later
+        // crossing carries a later date, so the date alone would do; the window
+        // is belt-and-braces in case CoreLocation ever reuses a timestamp.
+        let now = Date()
+        if let seen = lastHandled[identifier],
+           seen.date == event.date,
+           seen.state == event.state,
+           now.timeIntervalSince(seen.receivedAt) < Self.duplicateWindow {
+            return
+        }
+        lastHandled[identifier] = (event.date, event.state, now)
+
         let previous = lastStates[identifier]
         lastStates[identifier] = event.state
 
@@ -253,7 +316,9 @@ actor RegionMonitorEngine {
         var parts = ["state=\(event.state.label)", "prev=\(previous?.label ?? "none")"]
         if let suppressed { parts.append("suppressed=\(suppressed)") }
         parts.append("eventAge=\(String(format: "%.1fs", -event.date.timeIntervalSinceNow))")
-        if let snapshot, let distance = Self.distanceDetail(from: fix, to: snapshot) { parts.append(distance) }
+        parts.append("evt=\(Self.timestamp.string(from: event.date))")
+        let distance = snapshot.flatMap { Self.distanceDetail(from: fix, to: $0) }
+        if let distance { parts.append(distance) }
         if snapshot == nil { parts.append("no matching region in store") }
         if event.refinement != nil { parts.append("refined=Y") }
         if let flags = Self.diagnosticFlags(for: event) { parts.append("flags=\(flags)") }
@@ -262,6 +327,15 @@ actor RegionMonitorEngine {
                              location: fix,
                              regionIdentifier: identifier,
                              detail: parts.joined(separator: " "))
+
+        // Only genuine crossings. A direction suppressed by the region's flags
+        // has already been downgraded to `.regionState` above, and a state
+        // resolution isn't something to buzz a pocket about.
+        if type == .regionEnter || type == .regionExit {
+            Notifier.shared.postCrossing(type,
+                                         region: identifier,
+                                         body: distance ?? "state=\(event.state.label)")
+        }
     }
 
     /// iOS 18 added per-event reasons for a condition not being monitored.
@@ -327,20 +401,9 @@ actor RegionMonitorEngine {
 
     private static let timestamp: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
     }()
-}
-
-/// Lets the unlock observer deregister itself from inside its own handler.
-/// Only ever touched on the main queue — the queue the observer is registered
-/// against, and the one that installs the token.
-private final class ObserverBox: @unchecked Sendable {
-    var token: NSObjectProtocol?
-    func release() {
-        if let token { NotificationCenter.default.removeObserver(token) }
-        token = nil
-    }
 }
 
 // MARK: - Readable labels
