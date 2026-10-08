@@ -49,6 +49,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             LocationService.shared.startMonitoringAll()
         }
 
+        ActivityService.shared.start()
+
         return true
     }
 

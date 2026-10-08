@@ -19,6 +19,7 @@
 		23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */; };
 		E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */; };
 		38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774736A694774244313B6C /* ServiceSession.swift */; };
+		84BA1EA9E6331EBFDE01CB61 /* ActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0618739B908668C99001468 /* ActivityService.swift */; };
 		51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8B031854CD9F8279B903F6 /* LogExporter.swift */; };
 		F6D4750EF8084D46DB48F130 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 820172743368FD03D0DF463C /* EmptyStateView.swift */; };
 		73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AFB0311991F316A40E7DF1 /* ExportView.swift */; };
@@ -42,6 +43,7 @@
 		201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorEngine.swift; sourceTree = "<group>"; };
 		5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionStore.swift; sourceTree = "<group>"; };
 		C3774736A694774244313B6C /* ServiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceSession.swift; sourceTree = "<group>"; };
+		A0618739B908668C99001468 /* ActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityService.swift; sourceTree = "<group>"; };
 		7F8B031854CD9F8279B903F6 /* LogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExporter.swift; sourceTree = "<group>"; };
 		820172743368FD03D0DF463C /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		E3AFB0311991F316A40E7DF1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 				F40E0BB58512C94AAC104948 /* App */,
 				2973F9B8E8DFBE48E83CF776 /* Persistence */,
 				655DF93D063A8773BACD4C9C /* Location */,
+				17FB2019D447D5A71E986179 /* Motion */,
 				904E3A8212F12BAE761CFAD1 /* Export */,
 				4EA9C6FBAC2AB18BB61BE7A4 /* Views */,
 				23E91DE8A4D8B2FFA4046B59 /* Resources */,
@@ -124,6 +127,14 @@
 				C3774736A694774244313B6C /* ServiceSession.swift */,
 			);
 			path = Location;
+			sourceTree = "<group>";
+		};
+		17FB2019D447D5A71E986179 /* Motion */ = {
+			isa = PBXGroup;
+			children = (
+				A0618739B908668C99001468 /* ActivityService.swift */,
+			);
+			path = Motion;
 			sourceTree = "<group>";
 		};
 		904E3A8212F12BAE761CFAD1 /* Export */ = {
@@ -235,6 +246,7 @@
 				23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */,
 				E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */,
 				38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */,
+				84BA1EA9E6331EBFDE01CB61 /* ActivityService.swift in Sources */,
 				51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */,
 				F6D4750EF8084D46DB48F130 /* EmptyStateView.swift in Sources */,
 				73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */,

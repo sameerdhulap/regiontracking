@@ -177,6 +177,7 @@ private struct LogRow: View {
         case .regionExit:                   return .orange
         case .error, .monitoringFailed:     return .red
         case .authChange:                   return .purple
+        case .activity:                     return .teal
         case .appLaunch, .appRelaunchByOS:  return .blue
         default:                            return .secondary
         }

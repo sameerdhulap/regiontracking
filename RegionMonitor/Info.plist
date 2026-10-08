@@ -53,6 +53,10 @@
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Keeps recording region entries and exits in the background, and when the app isn't running, so the log stays complete.</string>
 
+	<!-- CMMotionActivityManager crashes the app on first use without this. -->
+	<key>NSMotionUsageDescription</key>
+	<string>Records whether you were still, walking or driving, so region entries and exits can be checked against how you were moving.</string>
+
 	<!-- Required before allowsBackgroundLocationUpdates can be set to true.
 	     Setting that property without this key raises an exception. -->
 	<key>UIBackgroundModes</key>
