@@ -25,6 +25,7 @@ import CoreLocation
 import Foundation
 import UIKit
 
+@available(iOS 17.0, *)
 actor RegionMonitorEngine {
 
     static let shared = RegionMonitorEngine()
@@ -317,7 +318,7 @@ actor RegionMonitorEngine {
         if let suppressed { parts.append("suppressed=\(suppressed)") }
         parts.append("eventAge=\(String(format: "%.1fs", -event.date.timeIntervalSinceNow))")
         parts.append("evt=\(Self.timestamp.string(from: event.date))")
-        let distance = snapshot.flatMap { Self.distanceDetail(from: fix, to: $0) }
+        let distance = snapshot?.distanceDetail(from: fix)
         if let distance { parts.append(distance) }
         if snapshot == nil { parts.append("no matching region in store") }
         if event.refinement != nil { parts.append("refined=Y") }
@@ -360,18 +361,6 @@ actor RegionMonitorEngine {
         return flags.isEmpty ? nil : flags.joined(separator: ",")
     }
 
-    /// Distance from the last known fix to the condition centre, alongside
-    /// that fix's accuracy. When those two numbers overlap, a transition is
-    /// inside the noise floor rather than a real crossing.
-    private static func distanceDetail(from fix: CLLocation?, to snapshot: RegionSnapshot) -> String? {
-        guard let fix else { return nil }
-        let centre = CLLocation(latitude: snapshot.coordinate.latitude,
-                                longitude: snapshot.coordinate.longitude)
-        let distance = fix.distance(from: centre)
-        return String(format: "distToCentre=%.0fm radius=%.0fm margin=%+.0fm hAcc=%.0fm",
-                      distance, snapshot.radius, distance - snapshot.radius, fix.horizontalAccuracy)
-    }
-
     // MARK: - Store
 
     private func reloadConfigs() async {
@@ -408,6 +397,7 @@ actor RegionMonitorEngine {
 
 // MARK: - Readable labels
 
+@available(iOS 17.0, *)
 extension CLMonitor.Event.State {
     var label: String {
         switch self {

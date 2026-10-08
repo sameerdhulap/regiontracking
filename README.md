@@ -17,11 +17,11 @@ Then two things before you build:
 1. Select the **RegionMonitor** target -> **Signing & Capabilities** -> pick your team. `DEVELOPMENT_TEAM` ships empty and `PRODUCT_BUNDLE_IDENTIFIER` is `com.woosmap.app.citytime`, so change the bundle ID if you need one your team owns.
 2. Pick a real device. The Simulator can fake a location, but region crossings and background relaunches are unreliable there - you want hardware for anything you plan to trust.
 
-Everything else is already wired: deployment target is iOS 17.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour and an app icon.
+Everything else is already wired: deployment target is iOS 16.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour and an app icon.
 
 Background Modes needs no capability toggle and no entitlements file - for location it's purely the `UIBackgroundModes` array in Info.plist, which is already there. Xcode shows it ticked under Signing & Capabilities on its own.
 
-If you'd rather drop to iOS 16, the only blockers are `ContentUnavailableView` and the `.topBarLeading` toolbar placement in the views; swap those for a plain `VStack` and `.navigationBarLeading` and nothing else needs to change.
+The app runs on iOS 16, but region monitoring works differently there — see *Monitoring API* below. iOS 17+ is the path that gets the newer CoreLocation behaviour.
 
 ### Regenerating the project file
 
@@ -42,7 +42,7 @@ RegionMonitor.xcodeproj/
 RegionMonitor/
   App/           AppDelegate, SwiftUI entry point, app-state cache
   Persistence/   Core Data stack, model, log writer
-  Location/      CLLocationManager wrapper, CLMonitor engine, region store
+  Location/      CLLocationManager wrapper, both monitoring backends, region store
   Export/        CSV / JSON / GeoJSON serialisers
   Views/         SwiftUI screens
   Resources/     Assets.xcassets
@@ -84,7 +84,7 @@ That says the fix was 12 m inside a 150 m circle, but the fix itself was only ac
 
 `prev=` on each entry is the state CoreLocation last reported for that condition, so `prev=unknown` marks a first determination and `prev=unsatisfied state=satisfied` marks an actual crossing. `eventAge=` is how long the event sat before it reached the log.
 
-**Check region states** in the Log tab's overflow menu reads back the record CoreLocation has persisted for every condition. Note that this is weaker than it looks: `CLMonitor` has no equivalent of the old `requestState(for:)`, so it cannot force a fresh determination — it replays the last event, which may be hours old. Each such line is tagged `(persisted record, not a fresh fix)` and carries the event's own `date=`.
+**Check region states** in the Log tab's overflow menu behaves differently on each backend, and the log line says which you got. On iOS 17+ it is weaker than it looks: `CLMonitor` has no equivalent of the old `requestState(for:)`, so it cannot force a fresh determination — it replays the last persisted event, which may be hours old, tagged `(persisted record, not a fresh fix)` with the event's own `date=`. On iOS 16 it is a real `requestState(for:)` and the answer is current, tagged `(fresh determination)`.
 
 A few things that reduce flapping in practice, if that's what you're chasing:
 
@@ -109,6 +109,19 @@ Because `UIFileSharingEnabled` is set, those files also appear under **On My iPh
 `LogWriter.prune(olderThan:)` batch-deletes old entries and merges the deletions back into the view context, so the UI doesn't keep showing rows that no longer exist. Both the 7-day prune and delete-all are in the Log tab's overflow menu. Worth running before a long trial, since streaming fixes continuously will fill the store quickly.
 
 ## Monitoring API
+
+There are two backends, picked at runtime by `LocationService.usesConditionMonitoring` — the single place the decision is made. Nothing else in the app knows which is running.
+
+| | iOS 17+ | iOS 16 |
+|---|---|---|
+| file | `Location/RegionMonitorEngine.swift` | `Location/LegacyRegionMonitor.swift` |
+| API | `CLMonitor` + `CLCircularGeographicCondition` | `CLCircularRegion` + `CLLocationManager` |
+| delivery | `AsyncSequence` | delegate callbacks |
+| `requestState(for:)` | not available | **works** — a real determination on demand |
+| per-event diagnostic flags | iOS 18+ | none |
+| event timestamp (`evt=`) | yes | none; the callback *is* the event |
+
+Log lines are formatted identically by both, down to `prev=` and `distToCentre=`, so logs from the two can be compared line for line. Where a backend cannot supply a field it is simply absent, and `region.monitoring.start` on iOS 16 carries `backend=CLCircularRegion` so you always know which produced a given log.
 
 Regions are monitored with `CLMonitor` and `CLCircularGeographicCondition` (iOS 17+), in `Location/RegionMonitorEngine.swift`. `CLLocationManager` still handles authorisation, significant-change and visit monitoring, and one-shot/continuous fixes — none of which is deprecated.
 

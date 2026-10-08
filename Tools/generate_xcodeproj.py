@@ -21,7 +21,7 @@ import sys
 
 PROJECT_NAME = "RegionMonitor"
 BUNDLE_ID = "com.woosmap.app.citytime"
-DEPLOYMENT_TARGET = "17.0"
+DEPLOYMENT_TARGET = "16.0"
 SWIFT_VERSION = "5.0"
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -21,6 +21,20 @@ struct RegionSnapshot: Identifiable, Hashable {
 
     static func == (lhs: RegionSnapshot, rhs: RegionSnapshot) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
+    /// Distance from a fix to this region's centre, alongside that fix's
+    /// accuracy. When those two numbers overlap, a transition is inside the
+    /// noise floor rather than a real crossing.
+    ///
+    /// Shared by both monitoring backends so a log from iOS 16 and a log from
+    /// iOS 17 read the same and can be compared line for line.
+    func distanceDetail(from fix: CLLocation?) -> String? {
+        guard let fix else { return nil }
+        let centre = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        let distance = fix.distance(from: centre)
+        return String(format: "distToCentre=%.0fm radius=%.0fm margin=%+.0fm hAcc=%.0fm",
+                      distance, radius, distance - radius, fix.horizontalAccuracy)
+    }
 }
 
 final class RegionStore {

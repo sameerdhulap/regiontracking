@@ -14,11 +14,13 @@
 		D0749EC59A1AB3FA93DE23EC /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */; };
 		7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AE3F10A05AE5872207E3F7 /* LogWriter.swift */; };
 		DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27E4976C54867F9223357D0 /* Model.swift */; };
+		E9AA383C9EC1D61CBC9B1A5C /* LegacyRegionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F04DC0BFB7D02584F95F9F /* LegacyRegionMonitor.swift */; };
 		BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AE0720389E232AB088F096 /* LocationService.swift */; };
 		23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */; };
 		E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */; };
 		38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774736A694774244313B6C /* ServiceSession.swift */; };
 		51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8B031854CD9F8279B903F6 /* LogExporter.swift */; };
+		F6D4750EF8084D46DB48F130 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 820172743368FD03D0DF463C /* EmptyStateView.swift */; };
 		73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AFB0311991F316A40E7DF1 /* ExportView.swift */; };
 		AEB6EF7B26B4101A35D0BCF4 /* LogListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB29323A64CA48EDBAF4C460 /* LogListView.swift */; };
 		B85761B6DBD93C93DBF12D9D /* RegionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */; };
@@ -35,11 +37,13 @@
 		FA0CDBBFB9791FD33E2ABA90 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
 		05AE3F10A05AE5872207E3F7 /* LogWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWriter.swift; sourceTree = "<group>"; };
 		F27E4976C54867F9223357D0 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
+		C3F04DC0BFB7D02584F95F9F /* LegacyRegionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyRegionMonitor.swift; sourceTree = "<group>"; };
 		63AE0720389E232AB088F096 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMonitorEngine.swift; sourceTree = "<group>"; };
 		5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionStore.swift; sourceTree = "<group>"; };
 		C3774736A694774244313B6C /* ServiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceSession.swift; sourceTree = "<group>"; };
 		7F8B031854CD9F8279B903F6 /* LogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExporter.swift; sourceTree = "<group>"; };
+		820172743368FD03D0DF463C /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		E3AFB0311991F316A40E7DF1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		AB29323A64CA48EDBAF4C460 /* LogListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogListView.swift; sourceTree = "<group>"; };
 		E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionListView.swift; sourceTree = "<group>"; };
@@ -113,6 +117,7 @@
 		655DF93D063A8773BACD4C9C /* Location */ = {
 			isa = PBXGroup;
 			children = (
+				C3F04DC0BFB7D02584F95F9F /* LegacyRegionMonitor.swift */,
 				63AE0720389E232AB088F096 /* LocationService.swift */,
 				201961D7C16CDBA027D73011 /* RegionMonitorEngine.swift */,
 				5050B9DF1979B3AF31FCBAD0 /* RegionStore.swift */,
@@ -132,6 +137,7 @@
 		4EA9C6FBAC2AB18BB61BE7A4 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				820172743368FD03D0DF463C /* EmptyStateView.swift */,
 				E3AFB0311991F316A40E7DF1 /* ExportView.swift */,
 				AB29323A64CA48EDBAF4C460 /* LogListView.swift */,
 				E7557CEBAA9C8ABF84FD888D /* RegionListView.swift */,
@@ -224,11 +230,13 @@
 				D0749EC59A1AB3FA93DE23EC /* CoreDataStack.swift in Sources */,
 				7354508BB9D3C256718ACB9E /* LogWriter.swift in Sources */,
 				DDD5D0E17D166A0F24D91DD9 /* Model.swift in Sources */,
+				E9AA383C9EC1D61CBC9B1A5C /* LegacyRegionMonitor.swift in Sources */,
 				BB86530B083C98F5E0025D3D /* LocationService.swift in Sources */,
 				23434D6C78528414F1C6BFDF /* RegionMonitorEngine.swift in Sources */,
 				E079D9755CD0D0274D541288 /* RegionStore.swift in Sources */,
 				38EC1A2EEF8C0DAAC27BBA34 /* ServiceSession.swift in Sources */,
 				51FF58D516C1DC4FD63CADC2 /* LogExporter.swift in Sources */,
+				F6D4750EF8084D46DB48F130 /* EmptyStateView.swift in Sources */,
 				73B74B3C46BAE3D4FF56DBFF /* ExportView.swift in Sources */,
 				AEB6EF7B26B4101A35D0BCF4 /* LogListView.swift in Sources */,
 				B85761B6DBD93C93DBF12D9D /* RegionListView.swift in Sources */,
@@ -264,7 +272,7 @@
 					"$(inherited)",
 				);
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				ONLY_ACTIVE_ARCH = YES;
@@ -294,7 +302,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;

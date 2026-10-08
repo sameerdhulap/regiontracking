@@ -65,6 +65,7 @@ final class LocationService: NSObject, ObservableObject {
         authorizationStatus = manager.authorizationStatus
         accuracyAuthorization = manager.accuracyAuthorization
         maximumRegionRadius = manager.maximumRegionMonitoringDistance
+        LegacyRegionMonitor.shared.attach(to: manager)
         updateServiceSession(for: authorizationStatus)
     }
 
@@ -76,11 +77,24 @@ final class LocationService: NSObject, ObservableObject {
         }
     }
 
+    /// True when region monitoring runs on CLMonitor. iOS 16 has no such
+    /// class, so it falls back to CLCircularRegion in LegacyRegionMonitor.
+    /// This is the only place the choice is made.
+    static var usesConditionMonitoring: Bool {
+        if #available(iOS 17.0, *) { return true }
+        return false
+    }
+
     /// Opens the CLMonitor and starts draining its events. Called
     /// unconditionally at launch: CoreLocation drops a condition when an event
     /// is pending for it and nothing has opened the monitor to receive it.
+    ///
+    /// No-op on the legacy path — CLCircularRegion delivers through the
+    /// delegate, which `bootstrap()` has already wired up.
     func startEngine() {
-        Task { await RegionMonitorEngine.shared.start() }
+        if #available(iOS 17.0, *) {
+            Task { await RegionMonitorEngine.shared.start() }
+        }
     }
 
     static var hasLocationBackgroundMode: Bool {
@@ -130,19 +144,33 @@ final class LocationService: NSObject, ObservableObject {
     /// they're dropped on reinstall, so reconciling on launch is cheap
     /// insurance.
     func syncRegions() {
-        Task { await RegionMonitorEngine.shared.sync() }
+        if #available(iOS 17.0, *) {
+            Task { await RegionMonitorEngine.shared.sync() }
+        } else {
+            LegacyRegionMonitor.shared.sync()
+        }
     }
 
     func stopMonitoring(identifier: String) {
-        Task { await RegionMonitorEngine.shared.remove(identifier: identifier) }
+        if #available(iOS 17.0, *) {
+            Task { await RegionMonitorEngine.shared.remove(identifier: identifier) }
+        } else {
+            LegacyRegionMonitor.shared.remove(identifier: identifier)
+        }
     }
 
-    /// Logs the last state CoreLocation recorded for each condition. See
-    /// `RegionMonitorEngine.logCurrentStates()` — this reads back a persisted
-    /// record and cannot force a fresh determination the way the old
-    /// `requestState(for:)` did.
+    /// Asks for the state of every monitored region.
+    ///
+    /// The two backends differ here, and the log says which you got. On iOS 16
+    /// this is a real `requestState(for:)` — CoreLocation resolves the region
+    /// now. On 17+ CLMonitor has no equivalent, so it replays the last
+    /// persisted record, which may be hours old.
     func requestStateForAll() {
-        Task { await RegionMonitorEngine.shared.logCurrentStates() }
+        if #available(iOS 17.0, *) {
+            Task { await RegionMonitorEngine.shared.logCurrentStates() }
+        } else {
+            LegacyRegionMonitor.shared.requestStates()
+        }
     }
 
     @MainActor
@@ -201,6 +229,31 @@ extension LocationService: CLLocationManagerDelegate {
             LogWriter.shared.log(.location, location: location,
                                  detail: String(format: "age=%.1fs", -location.timestamp.timeIntervalSinceNow))
         }
+    }
+
+    // MARK: Region callbacks — legacy backend only
+    //
+    // Inert on iOS 17+: nothing is registered with CLLocationManager there, so
+    // these never fire. Guarded anyway so the intent is not left to inference.
+
+    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        guard !Self.usesConditionMonitoring else { return }
+        LegacyRegionMonitor.shared.didEnter(region)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        guard !Self.usesConditionMonitoring else { return }
+        LegacyRegionMonitor.shared.didExit(region)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
+        guard !Self.usesConditionMonitoring else { return }
+        LegacyRegionMonitor.shared.didDetermineState(state, for: region)
+    }
+
+    func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
+        guard !Self.usesConditionMonitoring else { return }
+        LegacyRegionMonitor.shared.monitoringDidFail(for: region, error: error)
     }
 
     func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
