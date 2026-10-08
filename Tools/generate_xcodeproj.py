@@ -29,7 +29,7 @@ SOURCE_DIR = os.path.join(ROOT, PROJECT_NAME)
 PROJECT_DIR = os.path.join(ROOT, f"{PROJECT_NAME}.xcodeproj")
 
 # Order matters only for readability of the generated file.
-GROUP_ORDER = ["App", "Persistence", "Location", "Export", "Views"]
+GROUP_ORDER = ["App", "Persistence", "Location", "Motion", "Export", "Views"]
 
 
 def oid(*parts: str) -> str:

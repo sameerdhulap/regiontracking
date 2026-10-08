@@ -160,11 +160,13 @@ final class LegacyRegionMonitor {
         let fix = LocationService.shared.lastLocation
         let previous = lastStates[region.identifier]
         lastStates[region.identifier] = state
+        let activity = ActivityService.shared.currentFields
 
         Task { @MainActor in
         let snapshot = await self.config(for: region.identifier)
         var parts = ["state=\(state.legacyLabel)", "prev=\(previous?.legacyLabel ?? "none")"]
         if let distance = snapshot?.distanceDetail(from: fix) { parts.append(distance) }
+        parts.append(activity)
         // CoreLocation calls didDetermineState both in answer to
         // requestState(for:) and unprompted, shortly after monitoring starts.
         // Claiming the former would be wrong half the time; what matters is
@@ -190,6 +192,7 @@ final class LegacyRegionMonitor {
         let fix = LocationService.shared.lastLocation
         let previous = lastStates[region.identifier]
         lastStates[region.identifier] = state
+        let activity = ActivityService.shared.currentFields
 
         Task { @MainActor in
             let snapshot = await self.config(for: region.identifier)
@@ -197,6 +200,7 @@ final class LegacyRegionMonitor {
             var parts = ["state=\(state.legacyLabel)", "prev=\(previous?.legacyLabel ?? "none")"]
             let distance = snapshot?.distanceDetail(from: fix)
             if let distance { parts.append(distance) }
+            parts.append(activity)
             if snapshot == nil { parts.append("no matching region in store") }
 
             LogWriter.shared.log(type,

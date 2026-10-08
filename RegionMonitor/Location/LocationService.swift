@@ -225,9 +225,10 @@ extension LocationService: CLLocationManagerDelegate {
         guard let latest = locations.last else { return }
         DispatchQueue.main.async { self.lastLocation = latest }
 
+        let activity = ActivityService.shared.currentFields
         for location in locations {
             LogWriter.shared.log(.location, location: location,
-                                 detail: String(format: "age=%.1fs", -location.timestamp.timeIntervalSinceNow))
+                                 detail: String(format: "age=%.1fs %@", -location.timestamp.timeIntervalSinceNow, activity))
         }
     }
 

@@ -17,7 +17,7 @@ Then two things before you build:
 1. Select the **RegionMonitor** target -> **Signing & Capabilities** -> pick your team. `DEVELOPMENT_TEAM` ships empty and `PRODUCT_BUNDLE_IDENTIFIER` is `com.woosmap.app.citytime`, so change the bundle ID if you need one your team owns.
 2. Pick a real device. The Simulator can fake a location, but region crossings and background relaunches are unreliable there - you want hardware for anything you plan to trust.
 
-Everything else is already wired: deployment target is iOS 16.0, the Info.plist carries both location usage strings, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour and an app icon.
+Everything else is already wired: deployment target is iOS 16.0, the Info.plist carries both location usage strings, the motion usage string, the `location` background mode and the file-sharing keys, and the asset catalog has an accent colour and an app icon.
 
 Background Modes needs no capability toggle and no entitlements file - for location it's purely the `UIBackgroundModes` array in Info.plist, which is already there. Xcode shows it ticked under Signing & Capabilities on its own.
 
@@ -31,7 +31,7 @@ The app runs on iOS 16, but region monitoring works differently there — see *M
 python3 Tools/generate_xcodeproj.py
 ```
 
-Object IDs are hashed from each file's path and role rather than randomised, so re-running on an unchanged tree gives you a byte-identical `project.pbxproj`. Add a Swift file anywhere under `RegionMonitor/` and re-run - it lands in the right group with no merge conflict. Top-level folders map to Xcode groups; `App`, `Persistence`, `Location`, `Export` and `Views` are ordered explicitly, anything new gets appended alphabetically.
+Object IDs are hashed from each file's path and role rather than randomised, so re-running on an unchanged tree gives you a byte-identical `project.pbxproj`. Add a Swift file anywhere under `RegionMonitor/` and re-run - it lands in the right group with no merge conflict. Top-level folders map to Xcode groups; `App`, `Persistence`, `Location`, `Motion`, `Export` and `Views` are ordered explicitly, anything new gets appended alphabetically.
 
 Adding files through Xcode's UI works fine too. The generator is just an escape hatch for when a pbxproj gets tangled.
 
@@ -43,6 +43,7 @@ RegionMonitor/
   App/           AppDelegate, SwiftUI entry point, app-state cache
   Persistence/   Core Data stack, model, log writer
   Location/      CLLocationManager wrapper, both monitoring backends, region store
+  Motion/        CMMotionActivityManager wrapper
   Export/        CSV / JSON / GeoJSON serialisers
   Views/         SwiftUI screens
   Resources/     Assets.xcassets
@@ -85,6 +86,8 @@ That says the fix was 12 m inside a 150 m circle, but the fix itself was only ac
 `prev=` on each entry is the state CoreLocation last reported for that condition, so `prev=unknown` marks a first determination and `prev=unsatisfied state=satisfied` marks an actual crossing. `eventAge=` is how long the event sat before it reached the log.
 
 **Check region states** in the Log tab's overflow menu behaves differently on each backend, and the log line says which you got. On iOS 17+ it is weaker than it looks: `CLMonitor` has no equivalent of the old `requestState(for:)`, so it cannot force a fresh determination — it replays the last persisted event, which may be hours old, tagged `(persisted record, not a fresh fix)` with the event's own `date=`. On iOS 16 it is a real `requestState(for:)` and the answer is current, tagged `(fresh determination)`.
+
+Every `location.update`, `region.enter`, `region.exit` and `region.state` carries the latest motion activity from CoreMotion — `activity=walking activityConfidence=high` — taken when the event arrives. More than one flag can be set (`automotive+stationary` is a car at a light). A `region.exit` logged while `stationary` is a strong hint the fix moved and you didn't. Replayed records from **Check region states** on iOS 17+ don't carry it, since the activity now says nothing about when that record was made. Activity has no log entries of its own, and CoreMotion never wakes the app, so it reads `activity=unknown` until the first update after a launch, or when motion access is unavailable.
 
 A few things that reduce flapping in practice, if that's what you're chasing:
 

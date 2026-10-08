@@ -293,6 +293,7 @@ actor RegionMonitorEngine {
 
         let previous = lastStates[identifier]
         lastStates[identifier] = event.state
+        let activity = ActivityService.shared.currentFields
 
         let snapshot = await config(for: identifier)
         let fix = await currentFix()
@@ -320,6 +321,7 @@ actor RegionMonitorEngine {
         parts.append("evt=\(Self.timestamp.string(from: event.date))")
         let distance = snapshot?.distanceDetail(from: fix)
         if let distance { parts.append(distance) }
+        parts.append(activity)
         if snapshot == nil { parts.append("no matching region in store") }
         if event.refinement != nil { parts.append("refined=Y") }
         if let flags = Self.diagnosticFlags(for: event) { parts.append("flags=\(flags)") }
