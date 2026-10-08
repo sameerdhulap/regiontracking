@@ -42,6 +42,10 @@ final class ActivityService {
     /// Main thread only.
     private var isRunning = false
 
+    /// Latest live activity, read from any thread by `currentFields`.
+    private let currentLock = NSLock()
+    private var current: CMMotionActivity?
+
     /// Last activity logged, so an update that repeats it is dropped rather
     /// than filling the log.
     private var last: (activity: String, confidence: String)?
@@ -78,9 +82,24 @@ final class ActivityService {
         isRunning = true
         manager.startActivityUpdates(to: queue) { [weak self] activity in
             guard let self, let activity else { return }
+            // Set before the backfill, so a fix logged meanwhile already sees it.
+            self.currentLock.lock()
+            self.current = activity
+            self.currentLock.unlock()
             self.pending.append(activity)
             self.drain()
         }
+    }
+
+    /// The latest live activity as log fields, for annotating other entries:
+    /// `activity=walking activityConfidence=high`, or `activity=unknown`
+    /// before the first update or when motion access is unavailable.
+    var currentFields: String {
+        currentLock.lock()
+        let activity = current
+        currentLock.unlock()
+        guard let activity else { return "activity=unknown" }
+        return "activity=\(activity.label) activityConfidence=\(activity.confidence.label)"
     }
 
     // MARK: - Backfill
