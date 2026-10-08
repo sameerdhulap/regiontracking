@@ -1,6 +1,6 @@
 # RegionMonitor
 
-An iOS app for watching circular regions and recording everything CoreLocation tells you about them — entries, exits, state determinations, raw fixes, visits, motion activity, authorisation changes and app launches — into Core Data, with export to CSV, JSON and GeoJSON for offline analysis.
+An iOS app for watching circular regions and recording everything CoreLocation tells you about them — entries, exits, state determinations, raw fixes, visits, authorisation changes and app launches — into Core Data, with export to CSV, JSON and GeoJSON for offline analysis.
 
 It's built to answer the question "did that exit event actually happen, or did the fix just wobble?", so every event carries the accuracy of the fix behind it and its distance to the region boundary.
 
@@ -87,9 +87,7 @@ That says the fix was 12 m inside a 150 m circle, but the fix itself was only ac
 
 **Check region states** in the Log tab's overflow menu behaves differently on each backend, and the log line says which you got. On iOS 17+ it is weaker than it looks: `CLMonitor` has no equivalent of the old `requestState(for:)`, so it cannot force a fresh determination — it replays the last persisted event, which may be hours old, tagged `(persisted record, not a fresh fix)` with the event's own `date=`. On iOS 16 it is a real `requestState(for:)` and the answer is current, tagged `(fresh determination)`.
 
-`motion.activity` entries record what CoreMotion thinks the device was doing — `activity=walking confidence=high prev=stationary age=4.2s`. More than one flag can be set (`automotive+stationary` is a car at a light), and `age=` is how long the activity had been under way when it was logged. A `region.exit` logged while `stationary` is a strong hint the fix moved and you didn't. Live updates only arrive while the app is running — CoreMotion never wakes it — so before each one is logged, the gap since the last activity entry is filled from CoreMotion's own history (about seven days). Those entries are stamped with when the activity started, carry `source=history` instead of `age=`, and leave app state and battery blank, since both would describe the moment of logging rather than the activity. A first run backfills nothing.
-
-Every `location.update`, `region.enter`, `region.exit` and `region.state` also carries the latest live activity — `activity=walking activityConfidence=high` — taken when the event arrives, so a single entry can be judged without cross-referencing. Replayed records from **Check region states** on iOS 17+ don't carry it, since the activity now says nothing about when that record was made. It reads `activity=unknown` until the first activity update arrives, or when motion access is unavailable.
+Every `location.update`, `region.enter`, `region.exit` and `region.state` carries the latest motion activity from CoreMotion — `activity=walking activityConfidence=high` — taken when the event arrives. More than one flag can be set (`automotive+stationary` is a car at a light). A `region.exit` logged while `stationary` is a strong hint the fix moved and you didn't. Replayed records from **Check region states** on iOS 17+ don't carry it, since the activity now says nothing about when that record was made. Activity has no log entries of its own, and CoreMotion never wakes the app, so it reads `activity=unknown` until the first update after a launch, or when motion access is unavailable.
 
 A few things that reduce flapping in practice, if that's what you're chasing:
 

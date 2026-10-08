@@ -2,21 +2,15 @@
 //  ActivityService.swift
 //  RegionMonitor
 //
-//  Logs the motion activity CoreMotion classifies — stationary, walking,
-//  running, cycling, automotive — so a region event can be read against what
+//  Tracks the motion activity CoreMotion classifies — stationary, walking,
+//  running, cycling, automotive — so location and region entries can say what
 //  the device was doing at the time. An exit logged while `stationary` is far
 //  more likely to be fix wobble than one logged while `automotive`.
 //
-//  Live updates only arrive while the app is running; CoreMotion never wakes
-//  it. CoreMotion does keep about seven days of history, though, so before
-//  each live update is logged the gap since the last logged activity is
-//  filled from that history. Backfilled entries are stamped with the
-//  activity's own start time, so they sort into place in the timeline, and
-//  carry `source=history`.
-//
-//  The backfill runs on every live update, not just on launch or foreground:
-//  a background wake-up delivers a live update too, and logging it without
-//  filling the gap first would move the cursor past history never recorded.
+//  Activity has no log entries of its own; it only annotates other events
+//  through `currentFields`. Updates only arrive while the app is running, and
+//  CoreMotion never wakes it, so after a relaunch entries read
+//  `activity=unknown` until the first update lands.
 //
 
 import CoreMotion
@@ -26,12 +20,7 @@ final class ActivityService {
 
     static let shared = ActivityService()
 
-    /// How far back CoreMotion keeps activity history.
-    private static let historyWindow: TimeInterval = 7 * 24 * 60 * 60
-
     private let manager = CMMotionActivityManager()
-
-    /// Serial. Everything below `isRunning` is only touched from here.
     private let queue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "RegionMonitor.Activity"
@@ -42,24 +31,8 @@ final class ActivityService {
     /// Main thread only.
     private var isRunning = false
 
-    /// Latest live activity, read from any thread by `currentFields`.
-    private let currentLock = NSLock()
+    private let lock = NSLock()
     private var current: CMMotionActivity?
-
-    /// Last activity logged, so an update that repeats it is dropped rather
-    /// than filling the log.
-    private var last: (activity: String, confidence: String)?
-
-    /// Timestamp of the newest activity entry in the log; backfill starts
-    /// here. Read from the store once per process, then kept in memory, since
-    /// a write still in flight would not show up in a fetch.
-    private var cursor: Date?
-    private var cursorLoaded = false
-
-    /// Live updates waiting on a backfill. They are handled one at a time so
-    /// a query in flight can't be overtaken by the update after it.
-    private var pending: [CMMotionActivity] = []
-    private var isBackfilling = false
 
     private init() {}
 
@@ -82,95 +55,22 @@ final class ActivityService {
         isRunning = true
         manager.startActivityUpdates(to: queue) { [weak self] activity in
             guard let self, let activity else { return }
-            // Set before the backfill, so a fix logged meanwhile already sees it.
-            self.currentLock.lock()
+            self.lock.lock()
             self.current = activity
-            self.currentLock.unlock()
-            self.pending.append(activity)
-            self.drain()
+            self.lock.unlock()
         }
     }
 
-    /// The latest live activity as log fields, for annotating other entries:
+    /// The latest activity as log fields, for annotating other entries:
     /// `activity=walking activityConfidence=high`, or `activity=unknown`
     /// before the first update or when motion access is unavailable.
+    /// Safe from any thread.
     var currentFields: String {
-        currentLock.lock()
+        lock.lock()
         let activity = current
-        currentLock.unlock()
+        lock.unlock()
         guard let activity else { return "activity=unknown" }
         return "activity=\(activity.label) activityConfidence=\(activity.confidence.label)"
-    }
-
-    // MARK: - Backfill
-
-    private func drain() {
-        guard !isBackfilling, let live = pending.first else { return }
-        isBackfilling = true
-        loadCursor { [weak self] in self?.backfill(before: live) }
-    }
-
-    private func loadCursor(then next: @escaping () -> Void) {
-        guard !cursorLoaded else { next(); return }
-        LogWriter.shared.latestTimestamp(of: .activity) { [weak self] date in
-            self?.queue.addOperation {
-                guard let self else { return }
-                self.cursor = date
-                self.cursorLoaded = true
-                next()
-            }
-        }
-    }
-
-    /// Logs history between the cursor and `live`, then `live` itself. With no
-    /// cursor — a first run — there is nothing to fill, and a week of history
-    /// from before the trial began would only be noise.
-    private func backfill(before live: CMMotionActivity) {
-        guard let cursor else { finish(live); return }
-
-        let from = max(cursor, live.startDate.addingTimeInterval(-Self.historyWindow))
-        guard from < live.startDate else { finish(live); return }
-
-        manager.queryActivityStarting(from: from, to: live.startDate, to: queue) { [weak self] activities, error in
-            guard let self else { return }
-            if let error {
-                LogWriter.shared.log(.error, detail: "Motion history query failed: \(error.localizedDescription)")
-            }
-            for activity in activities ?? [] where activity.startDate > from && activity.startDate < live.startDate {
-                self.record(activity, backfilled: true)
-            }
-            self.finish(live)
-        }
-    }
-
-    private func finish(_ live: CMMotionActivity) {
-        record(live, backfilled: false)
-        pending.removeFirst()
-        isBackfilling = false
-        drain()
-    }
-
-    // MARK: - Logging
-
-    private func record(_ activity: CMMotionActivity, backfilled: Bool) {
-        let current = (activity: activity.label, confidence: activity.confidence.label)
-        if let last, last == current { return }
-
-        let prev = last?.activity ?? "unknown"
-        last = current
-
-        if backfilled {
-            cursor = activity.startDate
-            LogWriter.shared.log(.activity,
-                                 detail: "activity=\(current.activity) confidence=\(current.confidence) prev=\(prev) source=history",
-                                 timestamp: activity.startDate)
-        } else {
-            cursor = Date()
-            LogWriter.shared.log(.activity, detail: String(
-                format: "activity=%@ confidence=%@ prev=%@ age=%.1fs",
-                current.activity, current.confidence, prev, -activity.startDate.timeIntervalSinceNow
-            ))
-        }
     }
 }
 

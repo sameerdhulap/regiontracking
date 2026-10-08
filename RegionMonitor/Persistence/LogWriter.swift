@@ -16,19 +16,16 @@ final class LogWriter {
 
     // MARK: - Public API
 
-    /// `timestamp` back-dates an event recovered after the fact. App state and
-    /// battery describe *now*, not then, so a back-dated event records neither.
     func log(_ type: EventType,
              location: CLLocation? = nil,
              regionIdentifier: String? = nil,
-             detail: String? = nil,
-             timestamp: Date? = nil) {
+             detail: String? = nil) {
 
         // Snapshot everything now — by the time the private queue drains, the
         // app state or the CLLocation reference could have moved on.
-        let now = timestamp ?? Date()
-        let appState: String? = timestamp == nil ? AppStateTracker.shared.state : nil
-        let battery: Float = timestamp == nil ? AppStateTracker.shared.batteryLevel : -1
+        let now = Date()
+        let appState = AppStateTracker.shared.state
+        let battery = AppStateTracker.shared.batteryLevel
 
         NSLog("[RegionMonitor] %@ region=%@ %@",
               type.rawValue, regionIdentifier ?? "-", detail ?? "")
@@ -109,19 +106,6 @@ final class LogWriter {
 
     func deleteAll(completion: (() -> Void)? = nil) {
         prune(olderThan: 0) { _ in completion?() }
-    }
-
-    /// Timestamp of the newest event of `type`, or nil if there is none.
-    /// `completion` runs on the store's private queue.
-    func latestTimestamp(of type: EventType, completion: @escaping (Date?) -> Void) {
-        let context = stack.writeContext
-        context.perform {
-            let request: NSFetchRequest<LogEvent> = LogEvent.fetchRequest()
-            request.predicate = NSPredicate(format: "type == %@", type.rawValue)
-            request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
-            request.fetchLimit = 1
-            completion((try? context.fetch(request))?.first?.timestamp)
-        }
     }
 
     func count(completion: @escaping (Int) -> Void) {

@@ -25,7 +25,6 @@ enum EventType: String, CaseIterable, Identifiable {
     case regionState        = "region.state"
     case location           = "location.update"
     case visit              = "location.visit"
-    case activity           = "motion.activity"
     case error              = "error"
     case note               = "note"
 
@@ -39,7 +38,6 @@ enum EventType: String, CaseIterable, Identifiable {
         case .regionState:                  return "questionmark.circle.fill"
         case .location:                     return "location.fill"
         case .visit:                        return "mappin.and.ellipse"
-        case .activity:                     return "figure.walk"
         case .authChange:                   return "lock.shield.fill"
         case .appLaunch, .appRelaunchByOS:  return "power"
         case .appState:                     return "rectangle.on.rectangle"
